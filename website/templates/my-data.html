@@ -1,0 +1,77 @@
+{% extends 'base.HTML' %}
+
+{% block title %}My Data{% endblock %}
+
+{% block content %}
+<span class="section-kicker">My Data</span>
+<h1 class="mt-2">My Entries</h1>
+<p class="muted">Every record is tagged to your user account and timestamped automatically.</p>
+
+<div class="row mt-4">
+  <div class="col-lg-6 mb-4">
+    <div class="table-card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">Newcomers</h4>
+        <a class="btn btn-outline-dark btn-sm" href="{{ url_for('views.guest_intake') }}">Add</a>
+      </div>
+      {% if guest_records %}
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>WhatsApp</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in guest_records %}
+                <tr>
+                  <td>{{ item.full_name }}</td>
+                  <td>{{ item.whatsapp_status or 'N/A' }}</td>
+                  <td>{{ item.created_at.strftime('%Y-%m-%d') }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="muted mb-0">No newcomer entries yet.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-lg-6 mb-4">
+    <div class="table-card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">Sponsorships</h4>
+        <a class="btn btn-outline-dark btn-sm" href="{{ url_for('views.sponsorship') }}">Add</a>
+      </div>
+      {% if sponsorship_records %}
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead>
+              <tr>
+                <th>Sponsor</th>
+                <th>Date</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in sponsorship_records %}
+                <tr>
+                  <td>{{ item.sponsor_legal_name }}</td>
+                  <td>{{ item.sponsorship_date.strftime('%Y-%m-%d') if item.sponsorship_date else 'TBD' }}</td>
+                  <td>{{ item.amount_options or item.amount_other or 'N/A' }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="muted mb-0">No sponsorship entries yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Offline</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 40px 20px;
+        background: #f7f7f7;
+        color: #222;
+      }
+      .card {
+        max-width: 480px;
+        margin: 60px auto;
+        background: #ffffff;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      }
+      h1 {
+        font-size: 22px;
+        margin: 0 0 10px;
+      }
+      p {
+        margin: 0 0 16px;
+        line-height: 1.4;
+      }
+      button {
+        background: #007bff;
+        color: #ffffff;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>You're offline</h1>
+      <p>Check your connection and tap retry to reload the app.</p>
+      <button type="button" onclick="window.location.reload()">Retry</button>
+    </div>
+  </body>
+</html>

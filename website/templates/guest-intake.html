@@ -1,0 +1,106 @@
+{% extends 'base.HTML' %}
+
+{% block title %}Guest Intake{% endblock %}
+
+{% block content %}
+<span class="section-kicker">Module 1</span>
+<h1 class="mt-2">Guest Intake</h1>
+<p class="muted">Capture newcomer details, first-time status, referral source, residence, and WhatsApp preference.</p>
+
+{% if errors %}
+  <div class="alert alert-danger">
+    <ul class="mb-0">
+      {% for e in errors %}
+        <li>{{ e }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+<form method="post" class="mt-4">
+  <div class="form-section">
+    <div class="form-row">
+      <div class="form-group col-md-4">
+        <label>Full Name <span class="text-danger">*</span></label>
+        <input type="text" name="full_name" class="form-control" value="{{ form.full_name if form else '' }}" required>
+      </div>
+      <div class="form-group col-md-4">
+        <label>Phone Number <span class="text-danger">*</span></label>
+        <input type="text" name="phone_number" class="form-control" value="{{ form.phone_number if form else '' }}" required>
+      </div>
+      <div class="form-group col-md-4">
+        <label>Email</label>
+        <input type="email" name="email" class="form-control" value="{{ form.email if form else '' }}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group col-md-6">
+        <label>First time at temple?</label>
+        <select name="first_time_at_temple" class="form-control">
+          <option value="yes" {% if form and form.get('first_time_at_temple') == 'yes' %}selected{% endif %}>Yes</option>
+          <option value="no" {% if not form or form.get('first_time_at_temple') == 'no' %}selected{% endif %}>No</option>
+        </select>
+      </div>
+      <div class="form-group col-md-6">
+        <label>Interested in joining Temple WhatsApp? <span class="text-danger">*</span></label>
+        <select name="whatsapp_status" class="form-control" required>
+          <option value="">-- Select --</option>
+          {% for option in whatsapp_options %}
+            <option value="{{ option }}" {% if form and form.get('whatsapp_status') == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h5>How did they hear about us?</h5>
+    <div class="form-row">
+      {% set selected_referrals = form.getlist('referral_sources') if form else [] %}
+      {% for option in referral_options %}
+        <div class="form-group col-md-4 mb-2">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="referral_sources" value="{{ option }}" id="referral_{{ loop.index }}" {% if option in selected_referrals %}checked{% endif %}>
+            <label class="form-check-label" for="referral_{{ loop.index }}">{{ option }}</label>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="form-group mb-0">
+      <label>Other referral details</label>
+      <input type="text" name="referral_other" class="form-control" value="{{ form.referral_other if form else '' }}">
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h5>Where do they reside?</h5>
+    <div class="form-row">
+      {% set selected_areas = form.getlist('residence_areas') if form else [] %}
+      {% for option in area_options %}
+        <div class="form-group col-md-4 mb-2">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="residence_areas" value="{{ option }}" id="area_{{ loop.index }}" {% if option in selected_areas %}checked{% endif %}>
+            <label class="form-check-label" for="area_{{ loop.index }}">{{ option }}</label>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="form-group mb-0">
+      <label>Other residence details</label>
+      <input type="text" name="residence_other" class="form-control" value="{{ form.residence_other if form else '' }}">
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="form-group mb-0">
+      <label>General Notes / Comments</label>
+      <textarea name="notes" class="form-control" rows="4">{{ form.notes if form else '' }}</textarea>
+    </div>
+  </div>
+
+  <div class="d-flex flex-column flex-md-row">
+    <button type="submit" name="submit_action" value="save" class="btn btn-dark mr-md-2 mb-2 mb-md-0">Save</button>
+    <button type="submit" name="submit_action" value="save_add_another" class="btn btn-outline-dark">Save &amp; Add Another</button>
+  </div>
+</form>
+{% endblock %}

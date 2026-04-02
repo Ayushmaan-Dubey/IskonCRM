@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="manifest" href="{{ url_for('views.manifest') }}">
+    <meta name="theme-color" content="#124559">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Temple CRM">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='icon-192.png') }}">
+    <link rel="icon" type="image/png" sizes="512x512" href="{{ url_for('static', filename='icon-512.png') }}">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" crossorigin="anonymous">
+    <title>{% block title %}{% endblock %}</title>
+    <style>
+      :root {
+        --ink: #143642;
+        --accent: #f4b942;
+        --accent-deep: #d38c11;
+        --paper: #f5f2eb;
+        --surface: #ffffff;
+        --muted: #6b7280;
+        --border: rgba(20, 54, 66, 0.12);
+      }
+
+      body {
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at 12% 18%, rgba(255, 153, 51, 0.24), transparent 24%),
+          radial-gradient(circle at 88% 16%, rgba(255, 215, 128, 0.24), transparent 22%),
+          radial-gradient(circle at 50% 100%, rgba(230, 168, 64, 0.12), transparent 36%),
+          linear-gradient(180deg, #fff7ea 0%, #fffdf8 42%, #f9f0de 100%);
+        color: var(--ink);
+        position: relative;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(circle at 50% 0%, rgba(211, 140, 17, 0.14), transparent 20%),
+          radial-gradient(circle at 0 100%, rgba(244, 185, 66, 0.12), transparent 18%),
+          radial-gradient(circle at 100% 100%, rgba(255, 153, 51, 0.1), transparent 18%),
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'%3E%3Cg fill='none' stroke='%23e7b85e' stroke-opacity='.18' stroke-width='1.2'%3E%3Cpath d='M110 30c10 20 10 42 0 62c-10-20-10-42 0-62Z'/%3E%3Cpath d='M110 190c-10-20-10-42 0-62c10 20 10 42 0 62Z'/%3E%3Cpath d='M30 110c20-10 42-10 62 0c-20 10-42 10-62 0Z'/%3E%3Cpath d='M190 110c-20 10-42 10-62 0c20-10 42-10 62 0Z'/%3E%3Cpath d='M57 57c19 2 36 10 53 27c-23 1-40-7-53-27Z'/%3E%3Cpath d='M163 163c-19-2-36-10-53-27c23-1 40 7 53 27Z'/%3E%3Cpath d='M163 57c-2 19-10 36-27 53c-1-23 7-40 27-53Z'/%3E%3Cpath d='M57 163c2-19 10-36 27-53c1 23-7 40-27 53Z'/%3E%3Ccircle cx='110' cy='110' r='14'/%3E%3C/g%3E%3C/svg%3E");
+        background-size: auto, auto, auto, 220px 220px;
+        background-position: top center, left bottom, right bottom, center top;
+        opacity: 0.9;
+        z-index: -1;
+      }
+
+      .navbar {
+        background: rgba(255, 255, 255, 0.92) !important;
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .navbar-brand {
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+
+      .shell {
+        padding: 2rem 0 3rem;
+      }
+
+      .page-card {
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        box-shadow: 0 18px 48px rgba(20, 54, 66, 0.08);
+        padding: 1.5rem;
+      }
+
+      .section-kicker {
+        display: inline-block;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--accent-deep);
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      .tile-grid,
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
+      }
+
+      .dashboard-tile,
+      .metric-card,
+      .table-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 1.1rem 1.2rem;
+        height: 100%;
+      }
+
+      .dashboard-tile {
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+      }
+
+      .dashboard-tile:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 32px rgba(20, 54, 66, 0.12);
+        text-decoration: none;
+      }
+
+      .metric-value {
+        font-size: 2rem;
+        font-weight: 700;
+      }
+
+      .form-section {
+        background: rgba(245, 242, 235, 0.6);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .table thead th {
+        border-top: 0;
+        font-size: 0.82rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .badge-role {
+        background: rgba(20, 54, 66, 0.08);
+        color: var(--ink);
+        border-radius: 999px;
+        padding: 0.35rem 0.65rem;
+      }
+
+      @media (max-width: 767px) {
+        .shell {
+          padding-top: 1rem;
+        }
+
+        .page-card {
+          padding: 1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-light">
+      <div class="container">
+        <a class="navbar-brand" href="{{ url_for('views.home') }}">Temple CRM</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ml-auto">
+            {% if current_user.is_authenticated %}
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('views.home') }}">Dashboard</a></li>
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('views.guest_intake') }}">Add Newcomer</a></li>
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('views.sponsorship') }}">Add Sponsor</a></li>
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('views.my_data') }}">My Data</a></li>
+              {% if current_user.is_admin %}
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('views.reports') }}">Reports</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.admin_users') }}">Users</a></li>
+              {% endif %}
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a></li>
+            {% else %}
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login') }}">Login</a></li>
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.sign_up') }}">Sign Up</a></li>
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.admin_sign_up') }}">Admin Sign Up</a></li>
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.admin_login') }}">Admin Login</a></li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="container mt-3">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category if category in ['success', 'info', 'warning', 'danger'] else 'info' }}" role="alert">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <main class="shell">
+      <div class="container">
+        <div class="page-card">
+          {% block content %}{% endblock %}
+        </div>
+      </div>
+    </main>
+
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("{{ url_for('views.service_worker') }}").catch(function (err) {
+            console.error("Service worker registration failed:", err);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>

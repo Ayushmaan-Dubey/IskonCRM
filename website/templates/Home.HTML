@@ -1,0 +1,98 @@
+{% extends 'base.HTML' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end mb-4">
+  <div>
+    <span class="section-kicker">Temple CRM</span>
+    <h1 class="mt-2 mb-2">Dashboard</h1>
+    <p class="muted mb-0">
+      Welcome {{ user.legal_name or user.first_name }}.
+      <span class="badge-role ml-2">{{ role_labels.get(user.role, 'User') }}</span>
+    </p>
+  </div>
+  <div class="mt-3 mt-lg-0 muted">
+    Data entered here is automatically tagged to your user profile and timestamped.
+  </div>
+</div>
+
+<div class="tile-grid mb-4">
+  <a class="dashboard-tile text-reset" href="{{ url_for('views.guest_intake') }}">
+    <span class="section-kicker">Module 1</span>
+    <h4 class="mt-2">Add Temple Newcomer</h4>
+    <p class="muted mb-0">Capture intake details, referral source, residence, and WhatsApp interest.</p>
+  </a>
+  <a class="dashboard-tile text-reset" href="{{ url_for('views.sponsorship') }}">
+    <span class="section-kicker">Module 2</span>
+    <h4 class="mt-2">Add Sponsor</h4>
+    <p class="muted mb-0">Track Sunday feast sponsorship names, amounts, dates, and payment methods.</p>
+  </a>
+  <a class="dashboard-tile text-reset" href="{{ url_for('views.my_data') }}">
+    <span class="section-kicker">My Work</span>
+    <h4 class="mt-2">See My Data</h4>
+    <p class="muted mb-0">Review the newcomer and sponsorship entries you have created.</p>
+  </a>
+  {% if user.is_admin %}
+    <a class="dashboard-tile text-reset" href="{{ url_for('views.reports') }}">
+      <span class="section-kicker">Admin</span>
+      <h4 class="mt-2">Reports</h4>
+      <p class="muted mb-0">View full tables, exports, and WhatsApp-ready contact lists.</p>
+    </a>
+  {% endif %}
+</div>
+
+<div class="metric-grid mb-4">
+  <div class="metric-card">
+    <span class="section-kicker">My Entries</span>
+    <div class="metric-value mt-2">{{ metrics.my_guest_count }}</div>
+    <div class="muted">Newcomer records created by you</div>
+  </div>
+  <div class="metric-card">
+    <span class="section-kicker">My Sponsorships</span>
+    <div class="metric-value mt-2">{{ metrics.my_sponsorship_count }}</div>
+    <div class="muted">Sponsorship records created by you</div>
+  </div>
+  <div class="metric-card">
+    <span class="section-kicker">This Week</span>
+    <div class="metric-value mt-2">{{ metrics.newcomers_this_week }}</div>
+    <div class="muted">Newcomers logged in the last 7 days</div>
+  </div>
+</div>
+
+<div class="table-card">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <span class="section-kicker">Upcoming</span>
+      <h4 class="mb-0 mt-2">Upcoming Sponsorships</h4>
+    </div>
+    <a class="btn btn-outline-dark btn-sm" href="{{ url_for('views.sponsorship') }}">Add Sponsorship</a>
+  </div>
+  {% if upcoming_sponsorships %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Sponsor</th>
+            <th>Occasion</th>
+            <th>Date</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in upcoming_sponsorships %}
+            <tr>
+              <td>{{ item.sponsor_legal_name }}</td>
+              <td>{{ item.occasion or 'Not specified' }}</td>
+              <td>{{ item.sponsorship_date.strftime('%b %d, %Y') if item.sponsorship_date else 'TBD' }}</td>
+              <td>{{ item.amount_options or item.amount_other or 'N/A' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted mb-0">No sponsorships are scheduled in the next 30 days yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

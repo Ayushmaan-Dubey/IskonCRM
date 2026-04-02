@@ -1,0 +1,68 @@
+{% extends 'base.HTML' %}
+
+{% block title %}Sign Up{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <span class="section-kicker">User Sign Up</span>
+    <h1 class="mt-2">Create your Temple CRM account</h1>
+    <p class="muted">Based on the design brief, each user profile stores legal name, username, email, phone number, and timestamps all future entries.</p>
+
+    <form method="POST" class="mt-4">
+      {% if errors %}
+        <div class="alert alert-danger">
+          <ul class="mb-0">
+            {% for e in errors %}
+              <li>{{ e }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      <div class="form-section">
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label for="legalName">Legal Name</label>
+            <input type="text" class="form-control" id="legalName" name="legalName" value="{{ form.legalName if form else '' }}" required>
+          </div>
+          <div class="form-group col-md-6">
+            <label for="username">Username</label>
+            <input type="text" class="form-control" id="username" name="username" value="{{ form.username if form else '' }}" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label for="email">Email</label>
+            <input type="email" class="form-control" id="email" name="email" value="{{ form.email if form else '' }}" required>
+          </div>
+          <div class="form-group col-md-6">
+            <label for="phoneNumber">Phone Number</label>
+            <input type="text" class="form-control" id="phoneNumber" name="phoneNumber" value="{{ form.phoneNumber if form else '' }}" required>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-row">
+          <div class="form-group col-md-4">
+            <label for="password1">Password</label>
+            <input type="password" class="form-control" id="password1" name="password1" required>
+          </div>
+          <div class="form-group col-md-4">
+            <label for="password2">Confirm Password</label>
+            <input type="password" class="form-control" id="password2" name="password2" required>
+          </div>
+          <div class="form-group col-md-4">
+            <label for="pin">User PIN</label>
+            <input type="password" class="form-control" id="pin" name="pin" required>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-dark">Create Account</button>
+      <a href="{{ url_for('auth.admin_sign_up') }}" class="btn btn-outline-secondary ml-2">Admin Sign Up</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

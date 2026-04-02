@@ -1,0 +1,120 @@
+{% extends 'base.HTML' %}
+
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end mb-4">
+  <div>
+    <span class="section-kicker">Module 3</span>
+    <h1 class="mt-2 mb-2">Data View and Reports</h1>
+    <p class="muted mb-0">Admin-only views for newcomer intake, sponsorships, exports, and WhatsApp-ready outreach lists.</p>
+  </div>
+  <div class="mt-3 mt-lg-0">
+    <a class="btn btn-outline-dark mr-2" href="{{ url_for('views.export_report', report_name='newcomers') }}">Export Newcomers CSV</a>
+    <a class="btn btn-dark" href="{{ url_for('views.export_report', report_name='sponsorships') }}">Export Sponsorships CSV</a>
+  </div>
+</div>
+
+<div class="table-card mb-4">
+  <h4 class="mb-3">Newcomer Intake Records</h4>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Created By</th>
+          <th>Phone</th>
+          <th>Email</th>
+          <th>First Time</th>
+          <th>WhatsApp</th>
+          <th>Referral</th>
+          <th>Residence</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in guest_records %}
+          <tr>
+            <td>{{ item.full_name }}</td>
+            <td>{{ item.created_by_user.username or item.created_by_user.legal_name or item.created_by_user.first_name if item.created_by_user else '' }}</td>
+            <td>{{ item.phone_number or '' }}</td>
+            <td>{{ item.email or '' }}</td>
+            <td>{{ 'Yes' if item.first_time_at_temple else 'No' }}</td>
+            <td>{{ item.whatsapp_status or '' }}</td>
+            <td>{{ item.referral_sources or item.referral_other or '' }}</td>
+            <td>{{ item.residence_areas or item.residence_other or '' }}</td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="8" class="muted">No newcomer data yet.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="table-card mb-4">
+  <h4 class="mb-3">Sunday Feast Sponsorships</h4>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Sponsor</th>
+          <th>Recorded By</th>
+          <th>For</th>
+          <th>Occasion</th>
+          <th>Date</th>
+          <th>Amount</th>
+          <th>Payment</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in sponsorship_records %}
+          <tr>
+            <td>{{ item.sponsor_legal_name }}</td>
+            <td>{{ item.created_by_user.display_name if item.created_by_user else '' }}</td>
+            <td>{{ item.sponsoring_for or '' }}</td>
+            <td>{{ item.occasion or '' }}</td>
+            <td>{{ item.sponsorship_date.strftime('%Y-%m-%d') if item.sponsorship_date else 'TBD' }}</td>
+            <td>{{ item.amount_options or item.amount_other or '' }}</td>
+            <td>{{ item.payment_methods or item.payment_method_other or '' }}</td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="7" class="muted">No sponsorship data yet.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="table-card">
+  <h4 class="mb-3">WhatsApp Broadcast Ready</h4>
+  <p class="muted">This is a filtered view for newcomers who selected WhatsApp interest. Actual broadcast integration is not wired yet in this pass.</p>
+  <div class="table-responsive">
+    <table class="table table-sm mb-0">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Phone</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in whatsapp_ready %}
+          <tr>
+            <td>{{ item.full_name }}</td>
+            <td>{{ item.phone_number or '' }}</td>
+            <td>{{ item.whatsapp_status }}</td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="3" class="muted">No WhatsApp-ready contacts yet.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

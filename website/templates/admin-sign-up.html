@@ -1,0 +1,68 @@
+{% extends 'base.HTML' %}
+
+{% block title %}Admin Sign Up{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <span class="section-kicker">Admin Sign Up</span>
+    <h1 class="mt-2">Create an administrator account</h1>
+    <p class="muted">Admins can view all users, assign roles, and access the reports module.</p>
+
+    <form method="post" class="mt-4">
+      {% if errors %}
+        <div class="alert alert-danger">
+          <ul class="mb-0">
+            {% for e in errors %}
+              <li>{{ e }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      <div class="form-section">
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label>Legal Name</label>
+            <input type="text" name="legalName" class="form-control" value="{{ form.legalName if form else '' }}" required>
+          </div>
+          <div class="form-group col-md-6">
+            <label>Username</label>
+            <input type="text" name="username" class="form-control" value="{{ form.username if form else '' }}" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label>Email</label>
+            <input type="email" name="email" class="form-control" value="{{ form.email if form else '' }}" required>
+          </div>
+          <div class="form-group col-md-6">
+            <label>Phone Number</label>
+            <input type="text" name="phoneNumber" class="form-control" value="{{ form.phoneNumber if form else '' }}" required>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-row">
+          <div class="form-group col-md-4">
+            <label>Password</label>
+            <input type="password" name="password1" class="form-control" required>
+          </div>
+          <div class="form-group col-md-4">
+            <label>Confirm Password</label>
+            <input type="password" name="password2" class="form-control" required>
+          </div>
+          <div class="form-group col-md-4">
+            <label>Admin PIN</label>
+            <input type="password" name="pin" class="form-control" required>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-dark">Create Admin</button>
+      <a href="{{ url_for('auth.sign_up') }}" class="btn btn-outline-secondary ml-2">User Sign Up</a>
+    </form>
+  </div>
+</div>
+{% endblock %}
