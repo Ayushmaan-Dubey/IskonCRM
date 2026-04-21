@@ -34,6 +34,8 @@ class Sponsorship(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sponsor_legal_name = db.Column(db.String(200), nullable=False)
     sponsor_spiritual_name = db.Column(db.String(200), nullable=True)
+    sponsor_phone_number = db.Column(db.String(50), nullable=True)
+    sponsor_email = db.Column(db.String(150), nullable=True)
     sponsoring_for = db.Column(db.String(200), nullable=True)
     occasion = db.Column(db.String(200), nullable=True)
     sponsorship_date = db.Column(db.Date, nullable=True)

@@ -161,6 +161,8 @@ def sponsorship():
         form = request.form
         sponsor_legal_name = form.get('sponsor_legal_name', '').strip()
         sponsor_spiritual_name = form.get('sponsor_spiritual_name', '').strip()
+        sponsor_phone_number = form.get('sponsor_phone_number', '').strip()
+        sponsor_email = form.get('sponsor_email', '').strip()
         sponsoring_for = form.get('sponsoring_for', '').strip()
         occasion = form.get('occasion', '').strip()
         sponsorship_date_raw = form.get('sponsorship_date', '').strip()
@@ -195,6 +197,8 @@ def sponsorship():
         record = Sponsorship(
             sponsor_legal_name=sponsor_legal_name,
             sponsor_spiritual_name=sponsor_spiritual_name or None,
+            sponsor_phone_number=sponsor_phone_number or None,
+            sponsor_email=sponsor_email or None,
             sponsoring_for=sponsoring_for or None,
             occasion=occasion or None,
             sponsorship_date=sponsorship_date,
@@ -282,9 +286,10 @@ def export_report(report_name):
             ])
     elif report_name == 'sponsorships':
         writer.writerow([
-            'Sponsor Legal Name', 'Sponsor Spiritual Name', 'Sponsoring For', 'Occasion',
-            'Sponsorship Date', 'Amount Options', 'Amount Other', 'Payment Methods',
-            'Payment Method Other', 'Notes', 'Created By', 'Created At',
+            'Sponsor Legal Name', 'Sponsor Spiritual Name', 'Sponsor Phone Number',
+            'Sponsor Email', 'Sponsoring For', 'Occasion', 'Sponsorship Date',
+            'Amount Options', 'Amount Other', 'Payment Methods', 'Payment Method Other',
+            'Notes', 'Created By', 'Created At',
         ])
         for record in Sponsorship.query.order_by(
             Sponsorship.sponsorship_date.asc(),
@@ -293,6 +298,8 @@ def export_report(report_name):
             writer.writerow([
                 record.sponsor_legal_name,
                 record.sponsor_spiritual_name or '',
+                record.sponsor_phone_number or '',
+                record.sponsor_email or '',
                 record.sponsoring_for or '',
                 record.occasion or '',
                 record.sponsorship_date.isoformat() if record.sponsorship_date else '',

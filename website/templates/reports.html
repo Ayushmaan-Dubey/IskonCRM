@@ -61,6 +61,8 @@
         <tr>
           <th>Sponsor</th>
           <th>Recorded By</th>
+          <th>Phone</th>
+          <th>Email</th>
           <th>For</th>
           <th>Occasion</th>
           <th>Date</th>
@@ -73,6 +75,8 @@
           <tr>
             <td>{{ item.sponsor_legal_name }}</td>
             <td>{{ item.created_by_user.display_name if item.created_by_user else '' }}</td>
+            <td>{{ item.sponsor_phone_number or '' }}</td>
+            <td>{{ item.sponsor_email or '' }}</td>
             <td>{{ item.sponsoring_for or '' }}</td>
             <td>{{ item.occasion or '' }}</td>
             <td>{{ item.sponsorship_date.strftime('%Y-%m-%d') if item.sponsorship_date else 'TBD' }}</td>
@@ -81,7 +85,7 @@
           </tr>
         {% else %}
           <tr>
-            <td colspan="7" class="muted">No sponsorship data yet.</td>
+            <td colspan="9" class="muted">No sponsorship data yet.</td>
           </tr>
         {% endfor %}
       </tbody>

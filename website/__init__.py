@@ -87,6 +87,14 @@ def create_app():
                 if 'created_by_admin' not in cols:
                     db.session.execute(text("ALTER TABLE user ADD COLUMN created_by_admin VARCHAR"))
                     db.session.commit()
+            if 'sponsorship' in inspector.get_table_names():
+                cols = [c['name'] for c in inspector.get_columns('sponsorship')]
+                if 'sponsor_phone_number' not in cols:
+                    db.session.execute(text("ALTER TABLE sponsorship ADD COLUMN sponsor_phone_number VARCHAR"))
+                    db.session.commit()
+                if 'sponsor_email' not in cols:
+                    db.session.execute(text("ALTER TABLE sponsorship ADD COLUMN sponsor_email VARCHAR"))
+                    db.session.commit()
             # create any missing tables
             db.create_all()
 
