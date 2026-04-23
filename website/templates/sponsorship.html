@@ -21,7 +21,7 @@
   <div class="form-section">
     <div class="form-row">
       <div class="form-group col-md-6">
-        <label>Sponsor Legal Name</label>
+        <label>Sponsor Legal Name <span class="text-danger">*</span></label>
         <input type="text" name="sponsor_legal_name" class="form-control" value="{{ form.sponsor_legal_name if form else '' }}" required>
       </div>
       <div class="form-group col-md-6">
@@ -31,8 +31,8 @@
     </div>
     <div class="form-row">
       <div class="form-group col-md-6">
-        <label>Sponsor Phone Number</label>
-        <input type="text" name="sponsor_phone_number" class="form-control" value="{{ form.sponsor_phone_number if form else '' }}">
+        <label>Sponsor Phone Number <span class="text-danger">*</span></label>
+        <input type="tel" name="sponsor_phone_number" class="form-control" value="{{ form.sponsor_phone_number if form else '' }}" pattern="[0-9]+" inputmode="numeric" required>
       </div>
       <div class="form-group col-md-6">
         <label>Sponsor Email</label>

@@ -176,6 +176,10 @@ def sponsorship():
         errors = []
         if not sponsor_legal_name:
             errors.append('Sponsor legal name is required.')
+        if not sponsor_phone_number:
+            errors.append('Sponsor phone number is required.')
+        elif not sponsor_phone_number.isdigit():
+            errors.append('Sponsor phone number must contain numbers only.')
         if not sponsorship_date_raw:
             errors.append('Date of sponsorship is required.')
         elif not sponsorship_date:
