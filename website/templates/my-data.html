@@ -26,7 +26,7 @@
             </thead>
             <tbody>
               {% for item in guest_records %}
-                <tr>
+                <tr class="record-row" data-toggle="modal" data-target="#guestDetail{{ item.id }}" tabindex="0" role="button">
                   <td>{{ item.full_name }}</td>
                   <td>{{ item.whatsapp_status or 'N/A' }}</td>
                   <td>{{ item.created_at.strftime('%Y-%m-%d') }}</td>
@@ -59,7 +59,7 @@
             </thead>
             <tbody>
               {% for item in sponsorship_records %}
-                <tr>
+                <tr class="record-row" data-toggle="modal" data-target="#sponsorshipDetail{{ item.id }}" tabindex="0" role="button">
                   <td>{{ item.sponsor_legal_name }}</td>
                   <td>{{ item.sponsorship_date.strftime('%Y-%m-%d') if item.sponsorship_date else 'TBD' }}</td>
                   <td>{{ item.amount_options or item.amount_other or 'N/A' }}</td>
@@ -74,4 +74,78 @@
     </div>
   </div>
 </div>
+
+{% for item in guest_records %}
+  <div class="modal fade" id="guestDetail{{ item.id }}" tabindex="-1" role="dialog" aria-labelledby="guestDetailLabel{{ item.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="guestDetailLabel{{ item.id }}">{{ item.full_name }}</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <dl class="row detail-list">
+            <dt class="col-sm-4">Phone</dt>
+            <dd class="col-sm-8">{{ item.phone_number or 'N/A' }}</dd>
+            <dt class="col-sm-4">Email</dt>
+            <dd class="col-sm-8">{{ item.email or 'N/A' }}</dd>
+            <dt class="col-sm-4">First Time</dt>
+            <dd class="col-sm-8">{{ 'Yes' if item.first_time_at_temple else 'No' }}</dd>
+            <dt class="col-sm-4">WhatsApp</dt>
+            <dd class="col-sm-8">{{ item.whatsapp_status or 'N/A' }}</dd>
+            <dt class="col-sm-4">Referral</dt>
+            <dd class="col-sm-8">{{ item.referral_sources or item.referral_other or 'N/A' }}</dd>
+            <dt class="col-sm-4">Residence</dt>
+            <dd class="col-sm-8">{{ item.residence_areas or item.residence_other or 'N/A' }}</dd>
+            <dt class="col-sm-4">Notes</dt>
+            <dd class="col-sm-8">{{ item.notes or 'N/A' }}</dd>
+            <dt class="col-sm-4">Created</dt>
+            <dd class="col-sm-8">{{ item.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endfor %}
+
+{% for item in sponsorship_records %}
+  <div class="modal fade" id="sponsorshipDetail{{ item.id }}" tabindex="-1" role="dialog" aria-labelledby="sponsorshipDetailLabel{{ item.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="sponsorshipDetailLabel{{ item.id }}">{{ item.sponsor_legal_name }}</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <dl class="row detail-list">
+            <dt class="col-sm-4">Spiritual Name</dt>
+            <dd class="col-sm-8">{{ item.sponsor_spiritual_name or 'N/A' }}</dd>
+            <dt class="col-sm-4">Phone</dt>
+            <dd class="col-sm-8">{{ item.sponsor_phone_number or 'N/A' }}</dd>
+            <dt class="col-sm-4">Email</dt>
+            <dd class="col-sm-8">{{ item.sponsor_email or 'N/A' }}</dd>
+            <dt class="col-sm-4">Sponsoring For</dt>
+            <dd class="col-sm-8">{{ item.sponsoring_for or 'N/A' }}</dd>
+            <dt class="col-sm-4">Occasion</dt>
+            <dd class="col-sm-8">{{ item.occasion or 'N/A' }}</dd>
+            <dt class="col-sm-4">Date</dt>
+            <dd class="col-sm-8">{{ item.sponsorship_date.strftime('%Y-%m-%d') if item.sponsorship_date else 'TBD' }}</dd>
+            <dt class="col-sm-4">Amount</dt>
+            <dd class="col-sm-8">{{ item.amount_options or item.amount_other or 'N/A' }}</dd>
+            <dt class="col-sm-4">Payment</dt>
+            <dd class="col-sm-8">{{ item.payment_methods or item.payment_method_other or 'N/A' }}</dd>
+            <dt class="col-sm-4">Notes</dt>
+            <dd class="col-sm-8">{{ item.notes or 'N/A' }}</dd>
+            <dt class="col-sm-4">Created</dt>
+            <dd class="col-sm-8">{{ item.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endfor %}
 {% endblock %}

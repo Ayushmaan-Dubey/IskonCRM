@@ -33,7 +33,7 @@
       </thead>
       <tbody>
         {% for item in guest_records %}
-          <tr>
+          <tr class="record-row" data-toggle="modal" data-target="#guestReportDetail{{ item.id }}" tabindex="0" role="button">
             <td>{{ item.full_name }}</td>
             <td>{{ item.created_by_user.username or item.created_by_user.legal_name or item.created_by_user.first_name if item.created_by_user else '' }}</td>
             <td>{{ item.phone_number or '' }}</td>
@@ -72,7 +72,7 @@
       </thead>
       <tbody>
         {% for item in sponsorship_records %}
-          <tr>
+          <tr class="record-row" data-toggle="modal" data-target="#sponsorshipReportDetail{{ item.id }}" tabindex="0" role="button">
             <td>{{ item.sponsor_legal_name }}</td>
             <td>{{ item.created_by_user.display_name if item.created_by_user else '' }}</td>
             <td>{{ item.sponsor_phone_number or '' }}</td>
@@ -121,4 +121,102 @@
     </table>
   </div>
 </div>
+
+{% for item in guest_records %}
+  <div class="modal fade" id="guestReportDetail{{ item.id }}" tabindex="-1" role="dialog" aria-labelledby="guestReportDetailLabel{{ item.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="guestReportDetailLabel{{ item.id }}">{{ item.full_name }}</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <dl class="row detail-list">
+            <dt class="col-sm-4">Recorded By</dt>
+            <dd class="col-sm-8">{{ item.created_by_user.display_name if item.created_by_user else 'N/A' }}</dd>
+            <dt class="col-sm-4">Phone</dt>
+            <dd class="col-sm-8">{{ item.phone_number or 'N/A' }}</dd>
+            <dt class="col-sm-4">Email</dt>
+            <dd class="col-sm-8">{{ item.email or 'N/A' }}</dd>
+            <dt class="col-sm-4">First Time</dt>
+            <dd class="col-sm-8">{{ 'Yes' if item.first_time_at_temple else 'No' }}</dd>
+            <dt class="col-sm-4">WhatsApp</dt>
+            <dd class="col-sm-8">{{ item.whatsapp_status or 'N/A' }}</dd>
+            <dt class="col-sm-4">Referral Sources</dt>
+            <dd class="col-sm-8">{{ item.referral_sources or 'N/A' }}</dd>
+            <dt class="col-sm-4">Other Referral</dt>
+            <dd class="col-sm-8">{{ item.referral_other or 'N/A' }}</dd>
+            <dt class="col-sm-4">Residence Areas</dt>
+            <dd class="col-sm-8">{{ item.residence_areas or 'N/A' }}</dd>
+            <dt class="col-sm-4">Other Residence</dt>
+            <dd class="col-sm-8">{{ item.residence_other or 'N/A' }}</dd>
+            <dt class="col-sm-4">Notes</dt>
+            <dd class="col-sm-8">{{ item.notes or 'N/A' }}</dd>
+            <dt class="col-sm-4">Created</dt>
+            <dd class="col-sm-8">{{ item.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
+          </dl>
+        </div>
+        <div class="modal-footer justify-content-between">
+          <form method="post" action="{{ url_for('views.delete_guest_record', record_id=item.id) }}" onsubmit="return confirm('Delete this newcomer record?');">
+            <button type="submit" class="btn btn-outline-danger">Delete record</button>
+          </form>
+          <button type="button" class="btn btn-dark" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endfor %}
+
+{% for item in sponsorship_records %}
+  <div class="modal fade" id="sponsorshipReportDetail{{ item.id }}" tabindex="-1" role="dialog" aria-labelledby="sponsorshipReportDetailLabel{{ item.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="sponsorshipReportDetailLabel{{ item.id }}">{{ item.sponsor_legal_name }}</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <dl class="row detail-list">
+            <dt class="col-sm-4">Recorded By</dt>
+            <dd class="col-sm-8">{{ item.created_by_user.display_name if item.created_by_user else 'N/A' }}</dd>
+            <dt class="col-sm-4">Spiritual Name</dt>
+            <dd class="col-sm-8">{{ item.sponsor_spiritual_name or 'N/A' }}</dd>
+            <dt class="col-sm-4">Phone</dt>
+            <dd class="col-sm-8">{{ item.sponsor_phone_number or 'N/A' }}</dd>
+            <dt class="col-sm-4">Email</dt>
+            <dd class="col-sm-8">{{ item.sponsor_email or 'N/A' }}</dd>
+            <dt class="col-sm-4">Sponsoring For</dt>
+            <dd class="col-sm-8">{{ item.sponsoring_for or 'N/A' }}</dd>
+            <dt class="col-sm-4">Occasion</dt>
+            <dd class="col-sm-8">{{ item.occasion or 'N/A' }}</dd>
+            <dt class="col-sm-4">Date</dt>
+            <dd class="col-sm-8">{{ item.sponsorship_date.strftime('%Y-%m-%d') if item.sponsorship_date else 'TBD' }}</dd>
+            <dt class="col-sm-4">Amount Options</dt>
+            <dd class="col-sm-8">{{ item.amount_options or 'N/A' }}</dd>
+            <dt class="col-sm-4">Other Amount</dt>
+            <dd class="col-sm-8">{{ item.amount_other or 'N/A' }}</dd>
+            <dt class="col-sm-4">Payment Methods</dt>
+            <dd class="col-sm-8">{{ item.payment_methods or 'N/A' }}</dd>
+            <dt class="col-sm-4">Other Payment</dt>
+            <dd class="col-sm-8">{{ item.payment_method_other or 'N/A' }}</dd>
+            <dt class="col-sm-4">Notes</dt>
+            <dd class="col-sm-8">{{ item.notes or 'N/A' }}</dd>
+            <dt class="col-sm-4">Created</dt>
+            <dd class="col-sm-8">{{ item.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
+          </dl>
+        </div>
+        <div class="modal-footer justify-content-between">
+          <form method="post" action="{{ url_for('views.delete_sponsorship_record', record_id=item.id) }}" onsubmit="return confirm('Delete this sponsorship record?');">
+            <button type="submit" class="btn btn-outline-danger">Delete record</button>
+          </form>
+          <button type="button" class="btn btn-dark" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endfor %}
 {% endblock %}

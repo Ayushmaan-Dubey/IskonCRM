@@ -44,6 +44,7 @@ AREA_OPTIONS = [
 AMOUNT_OPTIONS = ['$301', '$151', '$51', 'Other']
 PAYMENT_OPTIONS = ['Cash', 'Zelle', 'Card', 'Other']
 WHATSAPP_OPTIONS = ['Yes', 'No', 'Already on it']
+DUPLICATE_WINDOW = timedelta(minutes=10)
 
 
 def _parse_date(value):
@@ -60,6 +61,49 @@ def _admin_only():
         flash('Reports are only available to admins.', 'warning')
         return False
     return True
+
+
+def _recent_cutoff():
+    return datetime.utcnow() - DUPLICATE_WINDOW
+
+
+def _duplicate_guest_record(full_name, phone_number, email, first_time_value, whatsapp_status,
+                            referral_sources, referral_other, residence_areas, residence_other, notes):
+    return GuestIntake.query.filter(
+        GuestIntake.created_by_user_id == current_user.id,
+        GuestIntake.created_at >= _recent_cutoff(),
+        GuestIntake.full_name == full_name,
+        GuestIntake.phone_number == (phone_number or None),
+        GuestIntake.email == (email or None),
+        GuestIntake.first_time_at_temple == (first_time_value == 'yes'),
+        GuestIntake.whatsapp_status == whatsapp_status,
+        GuestIntake.referral_sources == (', '.join(referral_sources) if referral_sources else None),
+        GuestIntake.referral_other == (referral_other or None),
+        GuestIntake.residence_areas == (', '.join(residence_areas) if residence_areas else None),
+        GuestIntake.residence_other == (residence_other or None),
+        GuestIntake.notes == (notes or None),
+    ).first()
+
+
+def _duplicate_sponsorship_record(sponsor_legal_name, sponsor_spiritual_name, sponsor_phone_number,
+                                  sponsor_email, sponsoring_for, occasion, sponsorship_date, notes,
+                                  amount_options, amount_other, payment_methods, payment_method_other):
+    return Sponsorship.query.filter(
+        Sponsorship.created_by_user_id == current_user.id,
+        Sponsorship.created_at >= _recent_cutoff(),
+        Sponsorship.sponsor_legal_name == sponsor_legal_name,
+        Sponsorship.sponsor_spiritual_name == (sponsor_spiritual_name or None),
+        Sponsorship.sponsor_phone_number == (sponsor_phone_number or None),
+        Sponsorship.sponsor_email == (sponsor_email or None),
+        Sponsorship.sponsoring_for == (sponsoring_for or None),
+        Sponsorship.occasion == (occasion or None),
+        Sponsorship.sponsorship_date == sponsorship_date,
+        Sponsorship.notes == (notes or None),
+        Sponsorship.amount_options == (', '.join(amount_options) if amount_options else None),
+        Sponsorship.amount_other == (amount_other or None),
+        Sponsorship.payment_methods == (', '.join(payment_methods) if payment_methods else None),
+        Sponsorship.payment_method_other == (payment_method_other or None),
+    ).first()
 
 
 @views.route('/')
@@ -124,6 +168,16 @@ def guest_intake():
                 area_options=AREA_OPTIONS,
                 whatsapp_options=WHATSAPP_OPTIONS,
             )
+
+        duplicate = _duplicate_guest_record(
+            full_name, phone_number, email, first_time_value, whatsapp_status,
+            referral_sources, referral_other, residence_areas, residence_other, notes,
+        )
+        if duplicate:
+            flash('This newcomer was already saved. No duplicate record was created.', 'info')
+            if form.get('submit_action') == 'save_add_another':
+                return redirect(url_for('views.guest_intake'))
+            return redirect(url_for('views.my_data'))
 
         record = GuestIntake(
             full_name=full_name,
@@ -198,6 +252,15 @@ def sponsorship():
                 payment_options=PAYMENT_OPTIONS,
             )
 
+        duplicate = _duplicate_sponsorship_record(
+            sponsor_legal_name, sponsor_spiritual_name, sponsor_phone_number,
+            sponsor_email, sponsoring_for, occasion, sponsorship_date, notes,
+            amount_options, amount_other, payment_methods, payment_method_other,
+        )
+        if duplicate:
+            flash('This sponsorship was already saved. No duplicate record was created.', 'info')
+            return redirect(url_for('views.my_data'))
+
         record = Sponsorship(
             sponsor_legal_name=sponsor_legal_name,
             sponsor_spiritual_name=sponsor_spiritual_name or None,
@@ -235,6 +298,34 @@ def my_data():
         guest_records=guest_records,
         sponsorship_records=sponsorship_records,
     )
+
+
+@views.route('/records/newcomers/<int:record_id>/delete', methods=['POST'])
+@login_required
+def delete_guest_record(record_id):
+    if not _admin_only():
+        return redirect(url_for('views.home'))
+
+    record = GuestIntake.query.get_or_404(record_id)
+    guest_name = record.full_name
+    db.session.delete(record)
+    db.session.commit()
+    flash(f'Deleted newcomer record for {guest_name}.', 'success')
+    return redirect(url_for('views.reports'))
+
+
+@views.route('/records/sponsorships/<int:record_id>/delete', methods=['POST'])
+@login_required
+def delete_sponsorship_record(record_id):
+    if not _admin_only():
+        return redirect(url_for('views.home'))
+
+    record = Sponsorship.query.get_or_404(record_id)
+    sponsor_name = record.sponsor_legal_name
+    db.session.delete(record)
+    db.session.commit()
+    flash(f'Deleted sponsorship record for {sponsor_name}.', 'success')
+    return redirect(url_for('views.reports'))
 
 
 @views.route('/reports')
