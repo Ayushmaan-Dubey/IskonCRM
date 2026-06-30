@@ -1,0 +1,45 @@
+{% extends 'base.HTML' %}
+{% block title %}Edit Template — {{ tmpl.name }}{% endblock %}
+{% block content %}
+<span class="section-kicker">Admin · Message Template</span>
+<h1 class="mt-2 mb-1">{{ tmpl.name }}</h1>
+<p class="muted">Type: <code>{{ tmpl.template_type }}</code> — edits apply immediately to future sends.</p>
+
+<div class="row">
+  <div class="col-lg-7">
+    <form method="post">
+      <div class="form-section">
+        <div class="form-group">
+          <label class="font-weight-bold">Subject</label>
+          <input type="text" name="subject" class="form-control" value="{{ tmpl.subject or '' }}">
+          <small class="text-muted">Tokens: <code>{first_name}</code> <code>{date}</code></small>
+        </div>
+        <div class="form-group mb-0">
+          <label class="font-weight-bold">Body</label>
+          <textarea name="body" class="form-control" rows="12">{{ tmpl.body or '' }}</textarea>
+          <small class="text-muted">Available tokens: <code>{first_name}</code> <code>{date}</code> <code>{donation_amount}</code> <code>{sponsorship_categories}</code> <code>{form_url}</code> <code>{member_list}</code></small>
+        </div>
+      </div>
+      <button type="submit" name="action" value="save" class="btn btn-dark">Save Template</button>
+      <button type="submit" name="action" value="preview" class="btn btn-outline-dark ml-2">Preview with Sample Data</button>
+      <a href="{{ url_for('admin.admin_message_templates') }}" class="btn btn-link ml-2">Cancel</a>
+    </form>
+  </div>
+
+  {% if preview %}
+    <div class="col-lg-5 mt-4 mt-lg-0">
+      <div class="form-section">
+        <h6 class="font-weight-bold mb-3">Preview (sample data)</h6>
+        <div class="mb-2">
+          <span class="small text-muted text-uppercase font-weight-bold">Subject</span>
+          <div class="border rounded p-2 bg-white small mt-1">{{ preview.subject }}</div>
+        </div>
+        <div>
+          <span class="small text-muted text-uppercase font-weight-bold">Body</span>
+          <div class="border rounded p-2 bg-white small mt-1" style="white-space:pre-wrap;">{{ preview.body }}</div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

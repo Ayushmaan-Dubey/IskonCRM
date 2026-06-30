@@ -189,14 +189,31 @@
               <li class="nav-item"><a class="nav-link" href="{{ url_for('views.sponsorship') }}">Add Sponsor</a></li>
               <li class="nav-item"><a class="nav-link" href="{{ url_for('views.my_data') }}">My Data</a></li>
               {% if current_user.is_admin %}
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('views.reports') }}">Reports</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.admin_users') }}">Users</a></li>
+                <li class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-toggle="dropdown">Admin</a>
+                  <div class="dropdown-menu dropdown-menu-right">
+                    <a class="dropdown-item" href="{{ url_for('views.reports') }}">Reports</a>
+                    <a class="dropdown-item" href="{{ url_for('admin.admin_people') }}">People</a>
+                    <a class="dropdown-item" href="{{ url_for('admin.admin_hpo') }}">Home Program Outreach</a>
+                    <a class="dropdown-item" href="{{ url_for('admin.admin_inventory') }}">Inventory</a>
+                    <a class="dropdown-item" href="{{ url_for('admin.admin_broadcast') }}">Broadcast</a>
+                    <a class="dropdown-item" href="{{ url_for('admin.admin_message_templates') }}">Message Templates</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="{{ url_for('admin.admin_users') }}">Users</a>
+                    {% if current_user.is_super_admin %}
+                      <div class="dropdown-divider"></div>
+                      <a class="dropdown-item" href="{{ url_for('admin.admin_fact_sheet') }}">Fact Sheet</a>
+                      <a class="dropdown-item" href="{{ url_for('admin.admin_payment_settings') }}">Payment Settings</a>
+                    {% endif %}
+                  </div>
+                </li>
               {% endif %}
               <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a></li>
             {% else %}
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('views.fact_sheet') }}">Fact Sheet</a></li>
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('views.donate') }}">Donate</a></li>
               <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login') }}">Login</a></li>
               <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.sign_up') }}">Sign Up</a></li>
-              <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.admin_sign_up') }}">Admin Sign Up</a></li>
               <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.admin_login') }}">Admin Login</a></li>
             {% endif %}
           </ul>

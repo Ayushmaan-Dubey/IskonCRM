@@ -1,0 +1,36 @@
+{% extends 'base.HTML' %}
+{% block title %}Message Templates{% endblock %}
+{% block content %}
+<span class="section-kicker">Admin · Communications</span>
+<h1 class="mt-2 mb-1">Message Templates</h1>
+<p class="muted">Edit the email templates sent automatically by the system. Use <code>{first_name}</code>, <code>{date}</code>, <code>{donation_amount}</code>, <code>{sponsorship_categories}</code>, <code>{form_url}</code>, <code>{member_list}</code> as tokens.</p>
+
+<div class="table-card mt-3">
+  <table class="table mb-0">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Subject</th>
+        <th>Last Updated</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for tmpl in templates %}
+        <tr>
+          <td><strong>{{ tmpl.name }}</strong></td>
+          <td><span class="badge badge-secondary">{{ tmpl.template_type }}</span></td>
+          <td class="small text-muted">{{ tmpl.subject or '(no subject)' }}</td>
+          <td class="small text-muted">{{ tmpl.updated_at.strftime('%Y-%m-%d') if tmpl.updated_at else '—' }}</td>
+          <td>
+            <a href="{{ url_for('admin.admin_message_template_edit', tmpl_id=tmpl.id) }}" class="btn btn-xs btn-outline-dark">Edit</a>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-4">No templates found. They are seeded automatically on first run.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

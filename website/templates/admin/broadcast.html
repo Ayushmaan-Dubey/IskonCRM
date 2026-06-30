@@ -1,0 +1,44 @@
+{% extends 'base.HTML' %}
+{% block title %}Thursday Broadcast{% endblock %}
+{% block content %}
+<span class="section-kicker">Admin · Communications</span>
+<h1 class="mt-2 mb-1">Thursday Broadcast</h1>
+<p class="muted">Send a reminder to all members about Sunday's temple program. Broadcasts go out Thursday at 7 PM so attendees can plan their schedule.</p>
+
+{% if tmpl %}
+  <div class="form-section mb-4">
+    <h6 class="font-weight-bold mb-2">Current Template — <em>{{ tmpl.name }}</em></h6>
+    <div class="small text-muted"><strong>Subject:</strong> {{ tmpl.subject or '(no subject)' }}</div>
+    <pre class="small mt-2 p-2 bg-white border rounded" style="white-space:pre-wrap;">{{ tmpl.body or '(empty body)' }}</pre>
+    <a href="{{ url_for('admin.admin_message_template_edit', tmpl_id=tmpl.id) }}" class="btn btn-xs btn-outline-dark">Edit Template</a>
+  </div>
+{% else %}
+  <div class="alert alert-warning">No Thursday broadcast template found. Go to <a href="{{ url_for('admin.admin_message_templates') }}">Message Templates</a> to seed defaults.</div>
+{% endif %}
+
+<div class="form-section">
+  <h6 class="font-weight-bold mb-3">Send Broadcast</h6>
+  <form method="post">
+    <div class="form-group">
+      <label class="font-weight-bold">Delivery Mode</label>
+      <div class="form-check mt-1">
+        <input class="form-check-input" type="radio" name="mode" value="individual" id="mode_individual" checked>
+        <label class="form-check-label" for="mode_individual">
+          Individual emails — send one email per person with a known email address
+        </label>
+      </div>
+      <div class="form-check mt-1">
+        <input class="form-check-input" type="radio" name="mode" value="group" id="mode_group">
+        <label class="form-check-label" for="mode_group">
+          Group message (WhatsApp) — <span class="badge badge-warning">Pending API setup</span>
+        </label>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-dark">Send Broadcast Now</button>
+  </form>
+</div>
+
+<div class="alert alert-info mt-3 small">
+  <strong>Note:</strong> WhatsApp group broadcast will be enabled once the API provider is confirmed. Individual email broadcast is fully operational.
+</div>
+{% endblock %}

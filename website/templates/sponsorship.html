@@ -1,54 +1,48 @@
 {% extends 'base.HTML' %}
 
-{% block title %}Sunday Feast Sponsorship{% endblock %}
+{% block title %}Add Sponsorship{% endblock %}
 
 {% block content %}
 <span class="section-kicker">Module 2</span>
-<h1 class="mt-2">Sunday Feast Sponsorship</h1>
-<p class="muted">Track sponsor names, purpose, amount, payment method, and the requested sponsorship date.</p>
+<h1 class="mt-2">Add Sponsorship</h1>
+<p class="muted">Record a donation or Sunday feast sponsorship. Select categories, set date, and confirm payment method.</p>
 
 {% if errors %}
   <div class="alert alert-danger">
-    <ul class="mb-0">
-      {% for e in errors %}
-        <li>{{ e }}</li>
-      {% endfor %}
-    </ul>
+    <ul class="mb-0">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>
   </div>
 {% endif %}
 
 <form method="post" class="mt-4" data-prevent-double-submit>
+
   <div class="form-section">
+    <h5 class="mb-3">Sponsor Details</h5>
     <div class="form-row">
       <div class="form-group col-md-6">
-        <label>Sponsor Legal Name <span class="text-danger">*</span></label>
+        <label>Legal Name <span class="text-danger">*</span></label>
         <input type="text" name="sponsor_legal_name" class="form-control" value="{{ form.sponsor_legal_name if form else '' }}" required>
       </div>
       <div class="form-group col-md-6">
-        <label>Sponsor Spiritual Name</label>
+        <label>Spiritual Name</label>
         <input type="text" name="sponsor_spiritual_name" class="form-control" value="{{ form.sponsor_spiritual_name if form else '' }}">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group col-md-6">
-        <label>Sponsor Phone Number <span class="text-danger">*</span></label>
+        <label>Phone Number <span class="text-danger">*</span></label>
         <input type="tel" name="sponsor_phone_number" class="form-control" value="{{ form.sponsor_phone_number if form else '' }}" pattern="[0-9]+" inputmode="numeric" required>
       </div>
       <div class="form-group col-md-6">
-        <label>Sponsor Email</label>
+        <label>Email</label>
         <input type="email" name="sponsor_email" class="form-control" value="{{ form.sponsor_email if form else '' }}">
       </div>
     </div>
     <div class="form-row">
-      <div class="form-group col-md-4">
-        <label>Sponsoring For</label>
-        <input type="text" name="sponsoring_for" class="form-control" value="{{ form.sponsoring_for if form else '' }}">
+      <div class="form-group col-md-6">
+        <label>Occasion / In Honor Of</label>
+        <input type="text" name="occasion" class="form-control" value="{{ form.occasion if form else '' }}" placeholder="e.g., Birthday, Anniversary">
       </div>
-      <div class="form-group col-md-4">
-        <label>Occasion</label>
-        <input type="text" name="occasion" class="form-control" value="{{ form.occasion if form else '' }}">
-      </div>
-      <div class="form-group col-md-4">
+      <div class="form-group col-md-6">
         <label>Date of Sponsorship <span class="text-danger">*</span></label>
         <input type="date" name="sponsorship_date" class="form-control" value="{{ form.sponsorship_date if form else '' }}" required>
       </div>
@@ -56,50 +50,64 @@
   </div>
 
   <div class="form-section">
-    <h5>Amount</h5>
-    <div class="form-row">
-      {% set chosen_amounts = form.getlist('amount_options') if form else [] %}
-      {% for option in amount_options %}
-        <div class="form-group col-md-3 mb-2">
+    <h5 class="mb-3">Sponsorship Categories <span class="text-danger">*</span></h5>
+    <p class="muted small mb-2">Select all that apply.</p>
+    {% set chosen_cats = form.getlist('sponsorship_categories') if form else [] %}
+    <div class="row">
+      {% for option in sponsorship_categories %}
+        <div class="col-md-6 mb-2">
           <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="amount_options" value="{{ option }}" id="amount_{{ loop.index }}" {% if option in chosen_amounts %}checked{% endif %}>
-            <label class="form-check-label" for="amount_{{ loop.index }}">{{ option }}</label>
+            <input class="form-check-input" type="checkbox" name="sponsorship_categories"
+                   value="{{ option }}" id="cat_{{ loop.index }}"
+                   {% if option in chosen_cats %}checked{% endif %}>
+            <label class="form-check-label" for="cat_{{ loop.index }}">{{ option }}</label>
           </div>
         </div>
       {% endfor %}
     </div>
+  </div>
+
+  <div class="form-section">
+    <h5 class="mb-3">Donation Amount</h5>
     <div class="form-group mb-0">
-      <label>Other amount</label>
-      <input type="text" name="amount_other" class="form-control" value="{{ form.amount_other if form else '' }}">
+      <input type="text" name="donation_amount" class="form-control" style="max-width:200px;"
+             value="{{ form.donation_amount if form else '' }}" placeholder="e.g. $151">
     </div>
   </div>
 
   <div class="form-section">
-    <h5>Payment Method</h5>
-    <div class="form-row">
-      {% set chosen_methods = form.getlist('payment_methods') if form else [] %}
+    <h5 class="mb-3">Payment Method <span class="text-danger">*</span></h5>
+    {% set chosen_method = form.payment_method if form else '' %}
+    <div class="row">
       {% for option in payment_options %}
-        <div class="form-group col-md-3 mb-2">
+        <div class="col-md-4 mb-2">
           <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="payment_methods" value="{{ option }}" id="payment_{{ loop.index }}" {% if option in chosen_methods %}checked{% endif %}>
-            <label class="form-check-label" for="payment_{{ loop.index }}">{{ option }}</label>
+            <input class="form-check-input" type="radio" name="payment_method"
+                   value="{{ option }}" id="pay_{{ loop.index }}"
+                   {% if option == chosen_method %}checked{% endif %}>
+            <label class="form-check-label {% if option == 'Not Yet Paid' %}text-warning font-weight-bold{% endif %}"
+                   for="pay_{{ loop.index }}">
+              {{ option }}
+              {% if option == 'Not Yet Paid' %}<small class="d-block text-muted font-weight-normal">Triggers payment instruction email</small>{% endif %}
+            </label>
           </div>
         </div>
       {% endfor %}
     </div>
-    <div class="form-group mb-0">
-      <label>Other payment method</label>
-      <input type="text" name="payment_method_other" class="form-control" value="{{ form.payment_method_other if form else '' }}">
+    <div class="form-group mt-2 mb-0">
+      <label class="small muted">Other — please specify</label>
+      <input type="text" name="payment_method_other" class="form-control" style="max-width:300px;"
+             value="{{ form.payment_method_other if form else '' }}">
     </div>
   </div>
 
   <div class="form-section">
     <div class="form-group mb-0">
-      <label>General Notes / Comments</label>
-      <textarea name="notes" class="form-control" rows="4">{{ form.notes if form else '' }}</textarea>
+      <label>Notes / Comments</label>
+      <textarea name="notes" class="form-control" rows="3">{{ form.notes if form else '' }}</textarea>
     </div>
   </div>
 
-  <button class="btn btn-dark">Save</button>
+  <button class="btn btn-dark">Save Sponsorship</button>
 </form>
 {% endblock %}

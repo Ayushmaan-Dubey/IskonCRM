@@ -1,0 +1,47 @@
+{% extends 'base.HTML' %}
+{% block title %}Payment Settings{% endblock %}
+{% block content %}
+<span class="section-kicker">Super Admin · Settings</span>
+<h1 class="mt-2 mb-1">Payment Settings</h1>
+<p class="muted">These details are shown to donors on the public donation form when they select a payment method.</p>
+
+<form method="post" class="mt-4">
+  <div class="form-section">
+    <h6 class="font-weight-bold mb-3">Zelle</h6>
+    <div class="form-group mb-0">
+      <label class="small">Zelle phone number or email (shown to donors)</label>
+      <input type="text" name="zelle_details" class="form-control" style="max-width:400px;"
+             value="{{ settings.zelle_details or '' }}" placeholder="e.g. temple@iskcon.org or 512-555-0100">
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h6 class="font-weight-bold mb-3">Google Pay (GPay)</h6>
+    <div class="form-group mb-0">
+      <label class="small">GPay phone number or UPI handle</label>
+      <input type="text" name="gpay_details" class="form-control" style="max-width:400px;"
+             value="{{ settings.gpay_details or '' }}" placeholder="e.g. 512-555-0100">
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h6 class="font-weight-bold mb-3">PayPal</h6>
+    <div class="form-group mb-0">
+      <label class="small">PayPal.me link or email</label>
+      <input type="text" name="paypal_details" class="form-control" style="max-width:400px;"
+             value="{{ settings.paypal_details or '' }}" placeholder="e.g. paypal.me/iskontemple">
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h6 class="font-weight-bold mb-3">Other</h6>
+    <div class="form-group mb-0">
+      <label class="small">Custom payment instructions</label>
+      <textarea name="other_details" class="form-control" rows="3">{{ settings.other_details or '' }}</textarea>
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-dark">Save Settings</button>
+  <a href="{{ url_for('views.donate') }}" target="_blank" class="btn btn-outline-dark ml-2">Preview Donation Form</a>
+</form>
+{% endblock %}

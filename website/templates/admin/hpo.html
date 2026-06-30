@@ -1,0 +1,74 @@
+{% extends 'base.HTML' %}
+{% block title %}Home Program Outreach{% endblock %}
+{% block content %}
+<span class="section-kicker">Admin · HPO</span>
+<h1 class="mt-2 mb-1">Home Program Outreach</h1>
+<p class="muted">Participants who have attended or are enrolled in the temple's home program outreach initiative.</p>
+
+<form class="form-inline mb-3">
+  <select name="location" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
+    <option value="">All Locations</option>
+    {% for loc in locations %}
+      <option value="{{ loc }}" {% if location_filter == loc %}selected{% endif %}>{{ loc }}</option>
+    {% endfor %}
+  </select>
+  <select name="favorable" class="form-control form-control-sm" onchange="this.form.submit()">
+    <option value="">All Contact Preferences</option>
+    <option value="yes" {% if favorable_filter == 'yes' %}selected{% endif %}>Favorable Contact</option>
+    <option value="no" {% if favorable_filter == 'no' %}selected{% endif %}>Not Favorable</option>
+  </select>
+</form>
+
+<div class="table-card">
+  <table class="table table-hover mb-0">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Contact</th>
+        <th>Location</th>
+        <th>Favorable</th>
+        <th>Tags</th>
+        <th>Remove</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for person in participants %}
+        <tr>
+          <td><strong>{{ person.full_name }}</strong></td>
+          <td>
+            {% if person.email %}<div class="small">{{ person.email }}</div>{% endif %}
+            {% if person.phone_number %}<div class="small text-muted">{{ person.phone_number }}</div>{% endif %}
+          </td>
+          <td class="small">{{ person.location or '—' }}</td>
+          <td>
+            {% if person.favorable_contact %}
+              <span class="badge badge-success">Yes</span>
+            {% else %}
+              <span class="badge badge-secondary">No</span>
+            {% endif %}
+          </td>
+          <td>
+            {% for label, color in person.tag_badges %}
+              <span class="badge badge-{{ color }} mr-1">{{ label }}</span>
+            {% endfor %}
+          </td>
+          <td>
+            <form method="post" action="{{ url_for('admin.admin_hpo_toggle', person_id=person.id) }}">
+              <input type="hidden" name="action" value="remove">
+              <button class="btn btn-xs btn-outline-danger">Remove</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-4">No HPO participants found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="small text-muted mt-2">{{ participants|length }} participant{{ 's' if participants|length != 1 }}</p>
+
+<div class="mt-4 form-section">
+  <h6 class="font-weight-bold mb-3">Add Person to HPO</h6>
+  <p class="small text-muted">Search by going to <a href="{{ url_for('admin.admin_people') }}">People</a> and clicking Edit, then set HPO to Yes.</p>
+</div>
+{% endblock %}

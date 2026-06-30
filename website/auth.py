@@ -8,15 +8,18 @@ import os
 auth = Blueprint('auth', __name__)
 
 ROLE_OPTIONS = [
+    ('member', 'Member'),
     ('user', 'User'),
     ('sales', 'Sales'),
     ('sunday_school_teacher', 'Sunday School Teacher'),
     ('congregational_development', 'Congregational Development'),
     ('admins', 'Admin'),
+    ('super_admin', 'Super Admin'),
 ]
 
-USER_SIGNUP_PIN = 'RR'
-ADMIN_SIGNUP_PIN = '2026'
+USER_SIGNUP_PIN = os.environ.get('USER_SIGNUP_PIN', 'RR')
+ADMIN_SIGNUP_PIN = os.environ.get('ADMIN_SIGNUP_PIN', '2026')
+SUPER_ADMIN_SIGNUP_PIN = os.environ.get('SUPER_ADMIN_SIGNUP_PIN', 'SA2026')
 
 
 @auth.route('/login', methods = ['Get', 'POST'])
@@ -126,8 +129,9 @@ def admin_sign_up():
         if len(password1) < 6:
             errors.append('Password must be at least 6 characters.')
 
-        # verify admin pin
-        if pin != ADMIN_SIGNUP_PIN:
+        # verify pin — admin pin OR super_admin pin accepted
+        is_super = (pin == SUPER_ADMIN_SIGNUP_PIN)
+        if pin != ADMIN_SIGNUP_PIN and not is_super:
             errors.append('Incorrect admin pin.')
 
         if db is not None:
@@ -142,6 +146,7 @@ def admin_sign_up():
             return render_template('admin-sign-up.html', errors=errors, form=request.form)
 
         if db is not None:
+            assigned_role = 'super_admin' if is_super else 'admins'
             new_user = User(
                 email=email,
                 first_name=firstName,
@@ -150,12 +155,11 @@ def admin_sign_up():
                 phone_number=phone_number,
                 password=generate_password_hash(password1, method='pbkdf2:sha256'),
                 is_admin=True,
-                role='admins',
+                role=assigned_role,
             )
             db.session.add(new_user)
             db.session.commit()
         else:
-            # no DB; skip persistence for now
             pass
 
         flash('Admin account created successfully. You can now log in.', 'success')

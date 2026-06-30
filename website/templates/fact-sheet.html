@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Temple Fact Sheet</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+  <style>
+    :root { --ink:#143642; --accent:#f4b942; --border:rgba(20,54,66,.12); }
+    body { background: linear-gradient(180deg,#fff7ea 0%,#fffdf8 60%,#f9f0de 100%); min-height:100vh; color:var(--ink); }
+    .fact-card { background:#fff; border:1px solid var(--border); border-radius:18px; box-shadow:0 18px 48px rgba(20,54,66,.08); padding:2rem; max-width:820px; margin:2rem auto; }
+    .section-kicker { font-size:.78rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:#d38c11; }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-light" style="background:rgba(255,255,255,.92);border-bottom:1px solid var(--border);">
+    <div class="container">
+      <a class="navbar-brand font-weight-bold" href="/">Temple CRM</a>
+      <div>
+        <a href="/donate" class="btn btn-sm btn-dark mr-2">Donate</a>
+        <a href="/login" class="btn btn-sm btn-outline-dark">Member Login</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container py-4">
+    <div class="fact-card">
+      <span class="section-kicker">Temple Information</span>
+      <h2 class="mt-2 mb-4">Temple Fact Sheet</h2>
+
+      {% if sheet %}
+        <div class="text-center">
+          <img src="{{ url_for('views.fact_sheet_image') }}" alt="Temple Fact Sheet"
+               class="img-fluid" style="max-width:100%;border-radius:12px;border:1px solid var(--border);">
+        </div>
+        <p class="text-muted small text-center mt-3">
+          Last updated: {{ sheet.uploaded_at.strftime('%B %d, %Y') if sheet.uploaded_at else 'Unknown' }}
+        </p>
+        <div class="text-center mt-3">
+          <a href="{{ url_for('views.fact_sheet_image') }}" download="temple-fact-sheet"
+             class="btn btn-outline-dark btn-sm">Download Image</a>
+        </div>
+      {% else %}
+        <div class="text-center py-5 text-muted">
+          <p style="font-size:3rem;">🛕</p>
+          <p>No fact sheet has been uploaded yet. Please check back soon.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Donate — Temple CRM</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+  <style>
+    :root { --ink:#143642; --accent:#f4b942; --border:rgba(20,54,66,.12); }
+    body { background: linear-gradient(180deg,#fff7ea 0%,#fffdf8 60%,#f9f0de 100%); min-height:100vh; color:var(--ink); }
+    .donate-card { background:#fff; border:1px solid var(--border); border-radius:18px; box-shadow:0 18px 48px rgba(20,54,66,.08); padding:2rem; max-width:640px; margin:2rem auto; }
+    .section-kicker { font-size:.78rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:#d38c11; }
+    .form-section { background:rgba(245,242,235,.6); border:1px solid var(--border); border-radius:14px; padding:1rem; margin-bottom:1rem; }
+    .payment-detail-box { display:none; background:#f0f7ff; border:1px solid #b8d4f0; border-radius:10px; padding:.85rem 1rem; margin-top:.5rem; font-size:.93rem; }
+    .payment-detail-box.active { display:block; }
+    .badge-tag { font-size:.75rem; padding:.3rem .6rem; border-radius:999px; }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-light" style="background:rgba(255,255,255,.92);border-bottom:1px solid var(--border);">
+    <div class="container">
+      <a class="navbar-brand font-weight-bold" href="/">Temple CRM</a>
+      <div>
+        <a href="/fact-sheet" class="btn btn-sm btn-outline-dark mr-2">Fact Sheet</a>
+        <a href="/login" class="btn btn-sm btn-dark">Member Login</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container py-4">
+    <div class="donate-card">
+
+      {% if success %}
+        <div class="text-center py-4">
+          <div style="font-size:3rem;">🙏</div>
+          <h2 class="mt-3" style="color:var(--ink);">Thank You!</h2>
+          <p class="text-muted mt-2">Your donation record has been received. May Krishna bless you for your generosity.</p>
+          <a href="/donate" class="btn btn-dark mt-3">Submit Another</a>
+        </div>
+
+      {% else %}
+        <span class="section-kicker">Donation Report Form</span>
+        <h2 class="mt-2 mb-1">Make a Donation</h2>
+        <p class="text-muted mb-4" style="font-size:.93rem;">
+          This form records your donation intent or confirms a payment already sent via Zelle, GPay, or PayPal.
+          <strong>No payment is collected here.</strong>
+        </p>
+
+        {% if errors %}
+          <div class="alert alert-danger">
+            <ul class="mb-0">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>
+          </div>
+        {% endif %}
+
+        <form method="post">
+
+          <div class="form-section">
+            <h6 class="font-weight-bold mb-3">Your Details</h6>
+            <div class="form-group">
+              <label>Full Name <span class="text-danger">*</span></label>
+              <input type="text" name="full_name" class="form-control" value="{{ form.full_name if form else '' }}" required>
+            </div>
+            <div class="form-group">
+              <label>Email Address <span class="text-danger">*</span></label>
+              <input type="email" name="email" class="form-control" value="{{ form.email if form else '' }}" required>
+            </div>
+            <div class="form-group mb-0">
+              <label>Phone Number <span class="text-muted small">(optional)</span></label>
+              <input type="tel" name="phone_number" class="form-control" value="{{ form.phone_number if form else '' }}" inputmode="numeric">
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h6 class="font-weight-bold mb-3">Sponsorship Category <span class="text-danger">*</span></h6>
+            {% set chosen_cats = form.getlist('sponsorship_categories') if form else [] %}
+            {% for option in sponsorship_categories %}
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="sponsorship_categories"
+                       value="{{ option }}" id="pcat_{{ loop.index }}"
+                       {% if option in chosen_cats %}checked{% endif %}>
+                <label class="form-check-label" for="pcat_{{ loop.index }}">{{ option }}</label>
+              </div>
+            {% endfor %}
+          </div>
+
+          <div class="form-section">
+            <h6 class="font-weight-bold mb-3">Donation Amount <span class="text-danger">*</span></h6>
+            <input type="text" name="donation_amount" class="form-control" style="max-width:180px;"
+                   value="{{ form.donation_amount if form else '' }}" placeholder="e.g. $151" required>
+          </div>
+
+          <div class="form-section">
+            <h6 class="font-weight-bold mb-3">Payment Method <span class="text-danger">*</span></h6>
+            {% set chosen_method = form.payment_method if form else '' %}
+            {% for option in payment_options %}
+              <div class="form-check mb-2">
+                <input class="form-check-input payment-radio" type="radio" name="payment_method"
+                       value="{{ option }}" id="ppay_{{ loop.index }}"
+                       {% if option == chosen_method %}checked{% endif %}>
+                <label class="form-check-label {% if option == 'Not Yet Paid' %}font-weight-bold{% endif %}"
+                       for="ppay_{{ loop.index }}">
+                  {{ option }}
+                  {% if option == 'Not Yet Paid' %}<small class="text-muted font-weight-normal"> — we will send you payment instructions</small>{% endif %}
+                </label>
+              </div>
+            {% endfor %}
+
+            {% if payment_settings %}
+              {% if payment_settings.zelle_details %}
+                <div class="payment-detail-box" id="detail-Zelle">
+                  <strong>Send via Zelle to:</strong><br>{{ payment_settings.zelle_details }}
+                </div>
+              {% endif %}
+              {% if payment_settings.gpay_details %}
+                <div class="payment-detail-box" id="detail-Google Pay (GPay)">
+                  <strong>Send via Google Pay to:</strong><br>{{ payment_settings.gpay_details }}
+                </div>
+              {% endif %}
+              {% if payment_settings.paypal_details %}
+                <div class="payment-detail-box" id="detail-PayPal">
+                  <strong>Send via PayPal to:</strong><br>{{ payment_settings.paypal_details }}
+                </div>
+              {% endif %}
+              {% if payment_settings.other_details %}
+                <div class="payment-detail-box" id="detail-Other">
+                  <strong>Other payment details:</strong><br>{{ payment_settings.other_details }}
+                </div>
+              {% endif %}
+            {% endif %}
+          </div>
+
+          <div class="form-section">
+            <h6 class="font-weight-bold mb-2">Notes <span class="text-muted small font-weight-normal">(optional)</span></h6>
+            <textarea name="notes" class="form-control" rows="3">{{ form.notes if form else '' }}</textarea>
+          </div>
+
+          <button type="submit" class="btn btn-dark btn-block">Submit Donation Record</button>
+          <p class="text-muted text-center mt-2" style="font-size:.8rem;">
+            This form is served over HTTPS. Your information is stored securely.
+          </p>
+        </form>
+      {% endif %}
+
+    </div>
+
+    <div class="text-center mb-4">
+      <img src="/donate/qr.png" alt="QR Code" style="width:120px;opacity:.7;">
+      <p class="text-muted small mt-1">Scan to open this form on your phone</p>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.querySelectorAll('.payment-radio').forEach(function(radio) {
+      radio.addEventListener('change', function() {
+        document.querySelectorAll('.payment-detail-box').forEach(function(box) { box.classList.remove('active'); });
+        var box = document.getElementById('detail-' + this.value);
+        if (box) box.classList.add('active');
+      });
+    });
+    // Show on load if pre-selected
+    var checked = document.querySelector('.payment-radio:checked');
+    if (checked) {
+      var box = document.getElementById('detail-' + checked.value);
+      if (box) box.classList.add('active');
+    }
+  </script>
+</body>
+</html>

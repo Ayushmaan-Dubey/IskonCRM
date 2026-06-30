@@ -1,48 +1,48 @@
-import csv
 import io
+import base64
 from datetime import datetime, timedelta
 
-from flask import Blueprint, Response, current_app, flash, redirect, render_template, request, send_from_directory, url_for
+from flask import (Blueprint, Response, current_app, flash, redirect,
+                   render_template, request, send_from_directory, url_for)
 from flask_login import current_user, login_required
 from sqlalchemy import desc
 
 from . import db
-from .models import GuestIntake, Sponsorship
+from .models import GuestIntake, Sponsorship, Person, FactSheet, PaymentSettings
 
 views = Blueprint('views', __name__)
 
 ROLE_LABELS = {
     'user': 'User',
+    'member': 'Member',
     'sales': 'Sales',
     'sunday_school_teacher': 'Sunday School Teacher',
     'congregational_development': 'Congregational Development',
     'admins': 'Admin',
+    'super_admin': 'Super Admin',
 }
 
 REFERRAL_OPTIONS = [
-    'Drive by',
-    'Social Media',
-    'Book Rack',
-    'Friends and Family',
-    'Google',
-    'Other',
+    'Drive by', 'Social Media', 'Book Rack', 'Friends and Family', 'Google', 'Other',
 ]
 
 AREA_OPTIONS = [
-    'Round Rock',
-    'Georgetown',
-    'Leander',
-    'Cedar Park',
-    'Liberty Hill',
-    'Pflugerville',
-    'North Austin',
-    'Downtown',
-    'South Austin',
-    'Other',
+    'Round Rock', 'Georgetown', 'Leander', 'Cedar Park', 'Liberty Hill',
+    'Pflugerville', 'North Austin', 'Downtown', 'South Austin', 'Other',
 ]
 
-AMOUNT_OPTIONS = ['$301', '$151', '$51', 'Other']
-PAYMENT_OPTIONS = ['Cash', 'Zelle', 'Card', 'Other']
+# SRS §3.2 — sponsorship categories
+SPONSORSHIP_CATEGORIES = [
+    'Sunday Feast — Prasadam',
+    'Sunday Feast — Garland',
+    'Sunday Feast — Flower',
+    'General Donation (one-time)',
+    'Special Program / Festival',
+]
+
+# SRS §3.3 — payment options (single-select)
+PAYMENT_OPTIONS = ['Zelle', 'Google Pay (GPay)', 'PayPal', 'Other', 'Not Yet Paid']
+
 WHATSAPP_OPTIONS = ['Yes', 'No', 'Already on it']
 DUPLICATE_WINDOW = timedelta(minutes=10)
 
@@ -67,8 +67,29 @@ def _recent_cutoff():
     return datetime.utcnow() - DUPLICATE_WINDOW
 
 
+def _find_or_create_person(full_name, email, phone_number, created_by_user_id=None):
+    person = None
+    if email:
+        person = Person.query.filter_by(email=email).first()
+    if person is None and phone_number:
+        person = Person.query.filter(
+            Person.phone_number == phone_number,
+            Person.email.is_(None)
+        ).first()
+    if person is None:
+        person = Person(
+            full_name=full_name,
+            email=email or None,
+            phone_number=phone_number or None,
+            created_by_user_id=created_by_user_id,
+        )
+        db.session.add(person)
+        db.session.flush()
+    return person
+
+
 def _duplicate_guest_record(full_name, phone_number, email, first_time_value, whatsapp_status,
-                            referral_sources, referral_other, residence_areas, residence_other, notes):
+                             referral_sources, referral_other, residence_areas, residence_other, notes):
     return GuestIntake.query.filter(
         GuestIntake.created_by_user_id == current_user.id,
         GuestIntake.created_at >= _recent_cutoff(),
@@ -85,26 +106,9 @@ def _duplicate_guest_record(full_name, phone_number, email, first_time_value, wh
     ).first()
 
 
-def _duplicate_sponsorship_record(sponsor_legal_name, sponsor_spiritual_name, sponsor_phone_number,
-                                  sponsor_email, sponsoring_for, occasion, sponsorship_date, notes,
-                                  amount_options, amount_other, payment_methods, payment_method_other):
-    return Sponsorship.query.filter(
-        Sponsorship.created_by_user_id == current_user.id,
-        Sponsorship.created_at >= _recent_cutoff(),
-        Sponsorship.sponsor_legal_name == sponsor_legal_name,
-        Sponsorship.sponsor_spiritual_name == (sponsor_spiritual_name or None),
-        Sponsorship.sponsor_phone_number == (sponsor_phone_number or None),
-        Sponsorship.sponsor_email == (sponsor_email or None),
-        Sponsorship.sponsoring_for == (sponsoring_for or None),
-        Sponsorship.occasion == (occasion or None),
-        Sponsorship.sponsorship_date == sponsorship_date,
-        Sponsorship.notes == (notes or None),
-        Sponsorship.amount_options == (', '.join(amount_options) if amount_options else None),
-        Sponsorship.amount_other == (amount_other or None),
-        Sponsorship.payment_methods == (', '.join(payment_methods) if payment_methods else None),
-        Sponsorship.payment_method_other == (payment_method_other or None),
-    ).first()
-
+# ─────────────────────────────────────────────────────────────
+# Dashboard
+# ─────────────────────────────────────────────────────────────
 
 @views.route('/')
 @login_required
@@ -135,6 +139,10 @@ def home():
     )
 
 
+# ─────────────────────────────────────────────────────────────
+# Newcomer Intake
+# ─────────────────────────────────────────────────────────────
+
 @views.route('/newcomers/new', methods=['GET', 'POST'])
 @login_required
 def guest_intake():
@@ -161,11 +169,8 @@ def guest_intake():
 
         if errors:
             return render_template(
-                'guest-intake.html',
-                errors=errors,
-                form=form,
-                referral_options=REFERRAL_OPTIONS,
-                area_options=AREA_OPTIONS,
+                'guest-intake.html', errors=errors, form=form,
+                referral_options=REFERRAL_OPTIONS, area_options=AREA_OPTIONS,
                 whatsapp_options=WHATSAPP_OPTIONS,
             )
 
@@ -193,6 +198,12 @@ def guest_intake():
             created_by_user_id=current_user.id,
         )
         db.session.add(record)
+        db.session.flush()
+
+        # Create/update unified Person record with visitor tag
+        person = _find_or_create_person(full_name, email or None, phone_number or None, current_user.id)
+        person.add_tag('visitor')
+        record.person_id = person.id
         db.session.commit()
 
         flash('Guest intake saved successfully.', 'success')
@@ -208,6 +219,10 @@ def guest_intake():
     )
 
 
+# ─────────────────────────────────────────────────────────────
+# Sponsorship (staff form)
+# ─────────────────────────────────────────────────────────────
+
 @views.route('/sponsorships/new', methods=['GET', 'POST'])
 @login_required
 def sponsorship():
@@ -217,14 +232,13 @@ def sponsorship():
         sponsor_spiritual_name = form.get('sponsor_spiritual_name', '').strip()
         sponsor_phone_number = form.get('sponsor_phone_number', '').strip()
         sponsor_email = form.get('sponsor_email', '').strip()
-        sponsoring_for = form.get('sponsoring_for', '').strip()
+        sponsorship_cats = form.getlist('sponsorship_categories')
         occasion = form.get('occasion', '').strip()
         sponsorship_date_raw = form.get('sponsorship_date', '').strip()
         sponsorship_date = _parse_date(sponsorship_date_raw)
+        donation_amount = form.get('donation_amount', '').strip()
         notes = form.get('notes', '').strip()
-        amount_options = form.getlist('amount_options')
-        amount_other = form.get('amount_other', '').strip()
-        payment_methods = form.getlist('payment_methods')
+        payment_method = form.get('payment_method', '').strip()
         payment_method_other = form.get('payment_method_other', '').strip()
 
         errors = []
@@ -238,74 +252,96 @@ def sponsorship():
             errors.append('Date of sponsorship is required.')
         elif not sponsorship_date:
             errors.append('Date of sponsorship must be a valid date.')
-        if not amount_options:
-            errors.append('Select at least one amount option.')
-        if not payment_methods:
-            errors.append('Select at least one payment method.')
+        if not sponsorship_cats:
+            errors.append('Select at least one sponsorship category.')
+        if not payment_method:
+            errors.append('Select a payment method.')
 
         if errors:
             return render_template(
-                'sponsorship.html',
-                errors=errors,
-                form=form,
-                amount_options=AMOUNT_OPTIONS,
+                'sponsorship.html', errors=errors, form=form,
+                sponsorship_categories=SPONSORSHIP_CATEGORIES,
                 payment_options=PAYMENT_OPTIONS,
             )
 
-        duplicate = _duplicate_sponsorship_record(
-            sponsor_legal_name, sponsor_spiritual_name, sponsor_phone_number,
-            sponsor_email, sponsoring_for, occasion, sponsorship_date, notes,
-            amount_options, amount_other, payment_methods, payment_method_other,
-        )
-        if duplicate:
-            flash('This sponsorship was already saved. No duplicate record was created.', 'info')
-            return redirect(url_for('views.my_data'))
+        not_yet_paid = (payment_method == 'Not Yet Paid')
 
         record = Sponsorship(
             sponsor_legal_name=sponsor_legal_name,
             sponsor_spiritual_name=sponsor_spiritual_name or None,
             sponsor_phone_number=sponsor_phone_number or None,
             sponsor_email=sponsor_email or None,
-            sponsoring_for=sponsoring_for or None,
+            sponsorship_categories=', '.join(sponsorship_cats) if sponsorship_cats else None,
             occasion=occasion or None,
             sponsorship_date=sponsorship_date,
+            donation_amount=donation_amount or None,
             notes=notes or None,
-            amount_options=', '.join(amount_options) if amount_options else None,
-            amount_other=amount_other or None,
-            payment_methods=', '.join(payment_methods) if payment_methods else None,
+            payment_methods=payment_method or None,
             payment_method_other=payment_method_other or None,
+            not_yet_paid=not_yet_paid,
+            source='internal',
             created_by_user_id=current_user.id,
         )
         db.session.add(record)
+        db.session.flush()
+
+        # Create/update unified Person record with donator tag
+        person = _find_or_create_person(
+            sponsor_legal_name, sponsor_email or None, sponsor_phone_number or None, current_user.id
+        )
+        person.add_tag('donator')
+        record.person_id = person.id
         db.session.commit()
+
+        # Send Not Yet Paid email if applicable
+        if not_yet_paid and sponsor_email:
+            _send_not_yet_paid(sponsor_email, sponsor_legal_name)
+
         flash('Sponsorship saved successfully.', 'success')
         return redirect(url_for('views.my_data'))
 
     return render_template(
         'sponsorship.html',
-        amount_options=AMOUNT_OPTIONS,
+        sponsorship_categories=SPONSORSHIP_CATEGORIES,
         payment_options=PAYMENT_OPTIONS,
     )
 
 
+def _send_not_yet_paid(email, name):
+    try:
+        from .email_utils import send_not_yet_paid_email
+        settings = PaymentSettings.query.first()
+        form_url = request.host_url.rstrip('/') + url_for('views.donate')
+        send_not_yet_paid_email(email, name, settings, form_url)
+    except Exception:
+        pass
+
+
+# ─────────────────────────────────────────────────────────────
+# My Data
+# ─────────────────────────────────────────────────────────────
+
 @views.route('/my-data')
 @login_required
 def my_data():
-    guest_records = GuestIntake.query.filter_by(created_by_user_id=current_user.id).order_by(desc(GuestIntake.created_at)).all()
-    sponsorship_records = Sponsorship.query.filter_by(created_by_user_id=current_user.id).order_by(desc(Sponsorship.created_at)).all()
-    return render_template(
-        'my-data.html',
-        guest_records=guest_records,
-        sponsorship_records=sponsorship_records,
-    )
+    guest_records = GuestIntake.query.filter_by(
+        created_by_user_id=current_user.id
+    ).order_by(desc(GuestIntake.created_at)).all()
+    sponsorship_records = Sponsorship.query.filter_by(
+        created_by_user_id=current_user.id
+    ).order_by(desc(Sponsorship.created_at)).all()
+    return render_template('my-data.html', guest_records=guest_records, sponsorship_records=sponsorship_records)
 
+
+# ─────────────────────────────────────────────────────────────
+# Admin delete actions
+# ─────────────────────────────────────────────────────────────
 
 @views.route('/records/newcomers/<int:record_id>/delete', methods=['POST'])
 @login_required
 def delete_guest_record(record_id):
     if not _admin_only():
         return redirect(url_for('views.home'))
-
     record = GuestIntake.query.get_or_404(record_id)
     guest_name = record.full_name
     db.session.delete(record)
@@ -319,7 +355,6 @@ def delete_guest_record(record_id):
 def delete_sponsorship_record(record_id):
     if not _admin_only():
         return redirect(url_for('views.home'))
-
     record = Sponsorship.query.get_or_404(record_id)
     sponsor_name = record.sponsor_legal_name
     db.session.delete(record)
@@ -328,44 +363,74 @@ def delete_sponsorship_record(record_id):
     return redirect(url_for('views.reports'))
 
 
+# ─────────────────────────────────────────────────────────────
+# Reports & Exports
+# ─────────────────────────────────────────────────────────────
+
 @views.route('/reports')
 @login_required
 def reports():
     if not _admin_only():
         return redirect(url_for('views.home'))
 
+    tag_filter = request.args.get('tag', '')
+    payment_filter = request.args.get('payment', '')
+
     guest_records = GuestIntake.query.order_by(desc(GuestIntake.created_at)).all()
-    sponsorship_records = Sponsorship.query.order_by(
-        Sponsorship.sponsorship_date.asc(),
-        desc(Sponsorship.created_at),
+
+    sp_query = Sponsorship.query
+    if payment_filter:
+        if payment_filter == 'not_yet_paid':
+            sp_query = sp_query.filter(Sponsorship.not_yet_paid == True)
+        else:
+            sp_query = sp_query.filter(Sponsorship.payment_methods == payment_filter)
+    sponsorship_records = sp_query.order_by(
+        Sponsorship.sponsorship_date.asc(), desc(Sponsorship.created_at)
     ).all()
-    whatsapp_ready = GuestIntake.query.filter(GuestIntake.whatsapp_status.in_(['Yes', 'Already on it'])).all()
+
+    whatsapp_ready = GuestIntake.query.filter(
+        GuestIntake.whatsapp_status.in_(['Yes', 'Already on it'])
+    ).all()
 
     return render_template(
         'reports.html',
         guest_records=guest_records,
         sponsorship_records=sponsorship_records,
         whatsapp_ready=whatsapp_ready,
+        payment_filter=payment_filter,
+        payment_options=PAYMENT_OPTIONS,
     )
 
 
-@views.route('/reports/export/<report_name>.csv')
+@views.route('/reports/export/<report_name>.xlsx')
 @login_required
-def export_report(report_name):
+def export_report_xlsx(report_name):
     if not _admin_only():
         return redirect(url_for('views.home'))
 
-    output = io.StringIO()
-    writer = csv.writer(output)
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment
+    except ImportError:
+        flash('openpyxl is not installed. Run: pip install openpyxl', 'danger')
+        return redirect(url_for('views.reports'))
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill('solid', fgColor='143642')
 
     if report_name == 'newcomers':
-        writer.writerow([
-            'Full Name', 'Phone Number', 'Email', 'First Time', 'WhatsApp Status',
+        ws.title = 'Newcomers'
+        headers = [
+            'Full Name', 'Phone', 'Email', 'First Time', 'WhatsApp',
             'Referral Sources', 'Referral Other', 'Residence Areas', 'Residence Other',
-            'Notes', 'Created By', 'Created At',
-        ])
+            'Notes', 'Recorded By', 'Created At',
+        ]
+        ws.append(headers)
         for record in GuestIntake.query.order_by(desc(GuestIntake.created_at)).all():
-            writer.writerow([
+            ws.append([
                 record.full_name,
                 record.phone_number or '',
                 record.email or '',
@@ -379,44 +444,216 @@ def export_report(report_name):
                 record.created_by_user.display_name if record.created_by_user else '',
                 record.created_at.strftime('%Y-%m-%d %H:%M'),
             ])
+
     elif report_name == 'sponsorships':
-        writer.writerow([
-            'Sponsor Legal Name', 'Sponsor Spiritual Name', 'Sponsor Phone Number',
-            'Sponsor Email', 'Sponsoring For', 'Occasion', 'Sponsorship Date',
-            'Amount Options', 'Amount Other', 'Payment Methods', 'Payment Method Other',
-            'Notes', 'Created By', 'Created At',
-        ])
+        ws.title = 'Sponsorships'
+        headers = [
+            'Sponsor Legal Name', 'Spiritual Name', 'Phone', 'Email',
+            'Sponsorship Categories', 'Occasion', 'Date',
+            'Amount', 'Payment Method', 'Not Yet Paid',
+            'Notes', 'Recorded By', 'Source', 'Created At',
+        ]
+        ws.append(headers)
         for record in Sponsorship.query.order_by(
-            Sponsorship.sponsorship_date.asc(),
-            desc(Sponsorship.created_at),
+            Sponsorship.sponsorship_date.asc(), desc(Sponsorship.created_at)
         ).all():
-            writer.writerow([
+            ws.append([
                 record.sponsor_legal_name,
                 record.sponsor_spiritual_name or '',
                 record.sponsor_phone_number or '',
                 record.sponsor_email or '',
-                record.sponsoring_for or '',
+                record.sponsorship_categories or record.sponsoring_for or '',
                 record.occasion or '',
                 record.sponsorship_date.isoformat() if record.sponsorship_date else '',
-                record.amount_options or '',
-                record.amount_other or '',
+                record.donation_amount or record.amount_options or record.amount_other or '',
                 record.payment_methods or '',
-                record.payment_method_other or '',
+                'Yes' if record.not_yet_paid else 'No',
                 record.notes or '',
-                record.created_by_user.display_name if record.created_by_user else '',
+                record.created_by_user.display_name if record.created_by_user else 'Public Form',
+                record.source or 'internal',
                 record.created_at.strftime('%Y-%m-%d %H:%M'),
+            ])
+
+    elif report_name == 'people':
+        ws.title = 'People'
+        headers = ['Full Name', 'Email', 'Phone', 'Status Tags', 'HPO Participant',
+                   'Favorable Contact', 'Location', 'Notes', 'Created At']
+        ws.append(headers)
+        for p in Person.query.order_by(Person.full_name).all():
+            ws.append([
+                p.full_name, p.email or '', p.phone_number or '',
+                p.status_tags or '',
+                'Yes' if p.home_program_outreach_participant else 'No',
+                'Yes' if p.favorable_contact else 'No',
+                p.location or '', p.notes or '',
+                p.created_at.strftime('%Y-%m-%d %H:%M'),
             ])
     else:
         flash('Unknown report requested.', 'warning')
         return redirect(url_for('views.reports'))
 
-    filename = f'{report_name}-report.csv'
+    # Style header row
+    for cell in ws[1]:
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center')
+
+    # Auto-size columns
+    for col in ws.columns:
+        max_len = max((len(str(cell.value or '')) for cell in col), default=10)
+        ws.column_dimensions[col[0].column_letter].width = min(max_len + 4, 50)
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
     return Response(
-        output.getvalue(),
-        mimetype='text/csv',
-        headers={'Content-Disposition': f'attachment; filename={filename}'},
+        buf.read(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename={report_name}-report.xlsx'},
     )
 
+
+# Keep legacy CSV route for backward compat
+@views.route('/reports/export/<report_name>.csv')
+@login_required
+def export_report(report_name):
+    return redirect(url_for('views.export_report_xlsx', report_name=report_name))
+
+
+# ─────────────────────────────────────────────────────────────
+# Public Donation Report Form (SRS §8)
+# ─────────────────────────────────────────────────────────────
+
+@views.route('/donate', methods=['GET', 'POST'])
+def donate():
+    payment_settings = PaymentSettings.query.first()
+
+    if request.method == 'POST':
+        form = request.form
+        full_name = form.get('full_name', '').strip()
+        email = form.get('email', '').strip()
+        phone_number = form.get('phone_number', '').strip()
+        sponsorship_cats = form.getlist('sponsorship_categories')
+        payment_method = form.get('payment_method', '').strip()
+        donation_amount = form.get('donation_amount', '').strip()
+        notes = form.get('notes', '').strip()
+
+        errors = []
+        if not full_name:
+            errors.append('Full name is required.')
+        if not email:
+            errors.append('Email address is required.')
+        if not sponsorship_cats:
+            errors.append('Please select at least one sponsorship category.')
+        if not payment_method:
+            errors.append('Please select a payment method.')
+        if not donation_amount:
+            errors.append('Donation amount is required.')
+
+        if errors:
+            return render_template(
+                'donate.html', errors=errors, form=form,
+                sponsorship_categories=SPONSORSHIP_CATEGORIES,
+                payment_options=PAYMENT_OPTIONS,
+                payment_settings=payment_settings,
+            )
+
+        not_yet_paid = (payment_method == 'Not Yet Paid')
+
+        record = Sponsorship(
+            sponsor_legal_name=full_name,
+            sponsor_email=email or None,
+            sponsor_phone_number=phone_number or None,
+            sponsorship_categories=', '.join(sponsorship_cats),
+            donation_amount=donation_amount,
+            payment_methods=payment_method,
+            not_yet_paid=not_yet_paid,
+            notes=notes or None,
+            source='public',
+            created_by_user_id=None,
+        )
+        db.session.add(record)
+        db.session.flush()
+
+        # Create/update unified Person record
+        person = _find_or_create_person(full_name, email or None, phone_number or None)
+        person.add_tag('donator')
+        record.person_id = person.id
+        db.session.commit()
+
+        # Send emails
+        if not_yet_paid and email:
+            try:
+                from .email_utils import send_not_yet_paid_email
+                form_url = request.host_url.rstrip('/') + url_for('views.donate')
+                send_not_yet_paid_email(email, full_name, payment_settings, form_url)
+            except Exception:
+                pass
+        elif email:
+            try:
+                from .email_utils import send_donation_confirmation_email
+                send_donation_confirmation_email(
+                    email, full_name,
+                    ', '.join(sponsorship_cats),
+                    donation_amount,
+                )
+            except Exception:
+                pass
+
+        return render_template('donate.html', success=True)
+
+    return render_template(
+        'donate.html',
+        sponsorship_categories=SPONSORSHIP_CATEGORIES,
+        payment_options=PAYMENT_OPTIONS,
+        payment_settings=payment_settings,
+    )
+
+
+# ─────────────────────────────────────────────────────────────
+# Temple Fact Sheet — public view (SRS §7)
+# ─────────────────────────────────────────────────────────────
+
+@views.route('/fact-sheet')
+def fact_sheet():
+    sheet = FactSheet.query.order_by(desc(FactSheet.uploaded_at)).first()
+    return render_template('fact-sheet.html', sheet=sheet)
+
+
+@views.route('/fact-sheet/image')
+def fact_sheet_image():
+    sheet = FactSheet.query.order_by(desc(FactSheet.uploaded_at)).first()
+    if not sheet:
+        return Response('No image uploaded', status=404)
+    img_bytes = base64.b64decode(sheet.image_data)
+    return Response(img_bytes, mimetype=sheet.image_mime)
+
+
+# ─────────────────────────────────────────────────────────────
+# QR Code for donation form (SRS §5.4)
+# ─────────────────────────────────────────────────────────────
+
+@views.route('/donate/qr.png')
+def donate_qr():
+    try:
+        import qrcode
+        donate_url = request.host_url.rstrip('/') + url_for('views.donate')
+        qr = qrcode.QRCode(version=1, box_size=10, border=4)
+        qr.add_data(donate_url)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color='#143642', back_color='white')
+        buf = io.BytesIO()
+        img.save(buf, format='PNG')
+        buf.seek(0)
+        return Response(buf.read(), mimetype='image/png')
+    except ImportError:
+        return Response('qrcode library not installed', status=500)
+
+
+# ─────────────────────────────────────────────────────────────
+# PWA helpers
+# ─────────────────────────────────────────────────────────────
 
 @views.route('/manifest.json')
 def manifest():

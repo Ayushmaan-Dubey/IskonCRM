@@ -1,0 +1,116 @@
+{% extends 'base.HTML' %}
+{% block title %}Inventory{% endblock %}
+{% block content %}
+<span class="section-kicker">Admin · Inventory</span>
+<h1 class="mt-2 mb-1">Inventory</h1>
+<p class="muted">Track temple supplies, prasadam ingredients, and ceremonial items.</p>
+
+<form class="form-inline mb-3">
+  <select name="category" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
+    <option value="">All Categories</option>
+    {% for cat in categories %}
+      <option value="{{ cat }}" {% if category_filter == cat %}selected{% endif %}>{{ cat }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+<div class="table-card mb-4">
+  <table class="table table-hover mb-0">
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Category</th>
+        <th>Quantity</th>
+        <th>Description</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+        <tr>
+          <td><strong>{{ item.name }}</strong></td>
+          <td><span class="badge badge-secondary">{{ item.category or 'Uncategorized' }}</span></td>
+          <td>
+            <span class="font-weight-bold {% if item.quantity == 0 %}text-danger{% elif item.quantity < 5 %}text-warning{% else %}text-success{% endif %}">
+              {{ item.quantity }}
+            </span>
+          </td>
+          <td class="small text-muted">{{ item.description or '—' }}</td>
+          <td>
+            <button class="btn btn-xs btn-outline-dark mr-1" data-toggle="modal" data-target="#editModal{{ item.id }}">Edit</button>
+            <form method="post" action="{{ url_for('admin.admin_inventory_delete', item_id=item.id) }}" class="d-inline"
+                  onsubmit="return confirm('Delete {{ item.name }}?')">
+              <button class="btn btn-xs btn-outline-danger">Delete</button>
+            </form>
+          </td>
+        </tr>
+
+        <!-- Edit Modal -->
+        <div class="modal fade" id="editModal{{ item.id }}" tabindex="-1">
+          <div class="modal-dialog">
+            <form method="post" action="{{ url_for('admin.admin_inventory_edit', item_id=item.id) }}" class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Edit: {{ item.name }}</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+              </div>
+              <div class="modal-body">
+                <div class="form-group">
+                  <label>Name</label>
+                  <input type="text" name="name" class="form-control" value="{{ item.name }}" required>
+                </div>
+                <div class="form-group">
+                  <label>Category</label>
+                  <input type="text" name="category" class="form-control" value="{{ item.category or '' }}" placeholder="e.g. Prasadam, Puja Items">
+                </div>
+                <div class="form-group">
+                  <label>Quantity</label>
+                  <input type="number" name="quantity" class="form-control" value="{{ item.quantity }}" min="0" required>
+                </div>
+                <div class="form-group">
+                  <label>Description</label>
+                  <textarea name="description" class="form-control" rows="2">{{ item.description or '' }}</textarea>
+                </div>
+                <div class="form-group mb-0">
+                  <label>Note (reason for change)</label>
+                  <input type="text" name="note" class="form-control" placeholder="optional">
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-dark">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-4">No inventory items yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="form-section">
+  <h6 class="font-weight-bold mb-3">Add New Item</h6>
+  <form method="post" action="{{ url_for('admin.admin_inventory_create') }}">
+    <div class="form-row">
+      <div class="form-group col-md-4">
+        <label>Item Name <span class="text-danger">*</span></label>
+        <input type="text" name="name" class="form-control" required>
+      </div>
+      <div class="form-group col-md-3">
+        <label>Category</label>
+        <input type="text" name="category" class="form-control" placeholder="e.g. Prasadam">
+      </div>
+      <div class="form-group col-md-2">
+        <label>Quantity</label>
+        <input type="number" name="quantity" class="form-control" value="0" min="0">
+      </div>
+      <div class="form-group col-md-3">
+        <label>Description</label>
+        <input type="text" name="description" class="form-control">
+      </div>
+    </div>
+    <button type="submit" class="btn btn-dark">Add Item</button>
+  </form>
+</div>
+{% endblock %}

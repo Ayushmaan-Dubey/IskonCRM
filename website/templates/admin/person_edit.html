@@ -1,0 +1,70 @@
+{% extends 'base.HTML' %}
+{% block title %}Edit Person — {{ person.full_name }}{% endblock %}
+{% block content %}
+<span class="section-kicker">Admin · People</span>
+<h1 class="mt-2 mb-1">Edit: {{ person.full_name }}</h1>
+
+<form method="post" class="mt-3">
+  <div class="form-section">
+    <h6 class="font-weight-bold mb-3">Contact Details</h6>
+    <div class="form-row">
+      <div class="form-group col-md-6">
+        <label>Full Name <span class="text-danger">*</span></label>
+        <input type="text" name="full_name" class="form-control" value="{{ person.full_name }}" required>
+      </div>
+      <div class="form-group col-md-6">
+        <label>Email</label>
+        <input type="email" name="email" class="form-control" value="{{ person.email or '' }}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group col-md-6">
+        <label>Phone Number</label>
+        <input type="tel" name="phone_number" class="form-control" value="{{ person.phone_number or '' }}">
+      </div>
+      <div class="form-group col-md-6">
+        <label>Location</label>
+        <select name="location" class="form-control">
+          <option value="">— Select —</option>
+          {% for loc in locations %}
+            <option value="{{ loc }}" {% if person.location == loc %}selected{% endif %}>{{ loc }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="form-group mb-0">
+      <label>Notes</label>
+      <textarea name="notes" class="form-control" rows="3">{{ person.notes or '' }}</textarea>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h6 class="font-weight-bold mb-3">Status Tags</h6>
+    {% set current_tags = person.get_tags() %}
+    {% for tag in ['visitor', 'donator', 'member'] %}
+      <div class="form-check mb-2">
+        <input class="form-check-input" type="checkbox" name="tags" value="{{ tag }}" id="tag_{{ tag }}"
+               {% if tag in current_tags %}checked{% endif %}>
+        <label class="form-check-label text-capitalize" for="tag_{{ tag }}">{{ tag }}</label>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="form-section">
+    <h6 class="font-weight-bold mb-3">Home Program Outreach</h6>
+    <div class="form-check mb-2">
+      <input class="form-check-input" type="checkbox" name="hpo" value="yes" id="hpo_yes"
+             {% if person.home_program_outreach_participant %}checked{% endif %}>
+      <label class="form-check-label" for="hpo_yes">Enrolled in Home Program Outreach</label>
+    </div>
+    <div class="form-check mb-0">
+      <input class="form-check-input" type="checkbox" name="favorable_contact" value="yes" id="fav_yes"
+             {% if person.favorable_contact %}checked{% endif %}>
+      <label class="form-check-label" for="fav_yes">Favorable for future contact</label>
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-dark">Save Changes</button>
+  <a href="{{ url_for('admin.admin_people') }}" class="btn btn-link ml-2">Cancel</a>
+</form>
+{% endblock %}

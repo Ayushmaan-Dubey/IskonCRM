@@ -39,7 +39,32 @@
       <h4 class="mt-2">Reports</h4>
       <p class="muted mb-0">View full tables, exports, and WhatsApp-ready contact lists.</p>
     </a>
+    <a class="dashboard-tile text-reset" href="{{ url_for('admin.admin_people') }}">
+      <span class="section-kicker">Admin · Module 2</span>
+      <h4 class="mt-2">People</h4>
+      <p class="muted mb-0">Unified member database — visitors, donators, and members.</p>
+    </a>
+    <a class="dashboard-tile text-reset" href="{{ url_for('admin.admin_hpo') }}">
+      <span class="section-kicker">Admin · Module 6</span>
+      <h4 class="mt-2">Home Program Outreach</h4>
+      <p class="muted mb-0">Track and manage HPO participants by location and contact preference.</p>
+    </a>
+    <a class="dashboard-tile text-reset" href="{{ url_for('admin.admin_inventory') }}">
+      <span class="section-kicker">Admin · Module 9</span>
+      <h4 class="mt-2">Inventory</h4>
+      <p class="muted mb-0">Manage temple supplies, prasadam, and ceremonial items.</p>
+    </a>
   {% endif %}
+  <a class="dashboard-tile text-reset" href="{{ url_for('views.donate') }}" target="_blank">
+    <span class="section-kicker">Public</span>
+    <h4 class="mt-2">Donation Form</h4>
+    <p class="muted mb-0">Share the public donation form link or QR code with devotees.</p>
+  </a>
+  <a class="dashboard-tile text-reset" href="{{ url_for('views.fact_sheet') }}" target="_blank">
+    <span class="section-kicker">Public</span>
+    <h4 class="mt-2">Temple Fact Sheet</h4>
+    <p class="muted mb-0">View the public-facing temple information page.</p>
+  </a>
 </div>
 
 <div class="metric-grid mb-4">
@@ -85,7 +110,7 @@
               <td>{{ item.sponsor_legal_name }}</td>
               <td>{{ item.occasion or 'Not specified' }}</td>
               <td>{{ item.sponsorship_date.strftime('%b %d, %Y') if item.sponsorship_date else 'TBD' }}</td>
-              <td>{{ item.amount_options or item.amount_other or 'N/A' }}</td>
+              <td>{{ item.donation_amount or item.amount_options or item.amount_other or 'N/A' }}</td>
             </tr>
           {% endfor %}
         </tbody>

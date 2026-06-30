@@ -1,0 +1,65 @@
+{% extends 'base.HTML' %}
+{% block title %}People — Admin{% endblock %}
+{% block content %}
+<span class="section-kicker">Admin · Member Database</span>
+<div class="d-flex align-items-center justify-content-between mt-2 mb-3">
+  <h1 class="mb-0">People</h1>
+  <a href="{{ url_for('views.export_report_xlsx', report_name='people') }}" class="btn btn-sm btn-outline-dark">Export .xlsx</a>
+</div>
+<p class="muted">Unified member database — visitors, donators, and members merged from all intake forms.</p>
+
+<form class="form-inline mb-3">
+  <label class="mr-2 small font-weight-bold">Filter by tag:</label>
+  <select name="tag" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
+    <option value="">All</option>
+    <option value="visitor" {% if tag_filter == 'visitor' %}selected{% endif %}>Visitor</option>
+    <option value="donator" {% if tag_filter == 'donator' %}selected{% endif %}>Donator</option>
+    <option value="member" {% if tag_filter == 'member' %}selected{% endif %}>Member</option>
+    <option value="hpo" {% if tag_filter == 'hpo' %}selected{% endif %}>HPO</option>
+  </select>
+</form>
+
+<div class="table-card mt-2">
+  <table class="table table-hover mb-0">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Contact</th>
+        <th>Tags</th>
+        <th>HPO</th>
+        <th>Location</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for person in people %}
+        <tr>
+          <td><strong>{{ person.full_name }}</strong></td>
+          <td>
+            {% if person.email %}<div class="small">{{ person.email }}</div>{% endif %}
+            {% if person.phone_number %}<div class="small text-muted">{{ person.phone_number }}</div>{% endif %}
+          </td>
+          <td>
+            {% for label, color in person.tag_badges %}
+              <span class="badge badge-{{ color }} mr-1">{{ label }}</span>
+            {% endfor %}
+          </td>
+          <td>{% if person.home_program_outreach_participant %}<span class="badge badge-info">HPO</span>{% endif %}</td>
+          <td class="small text-muted">{{ person.location or '—' }}</td>
+          <td>
+            <a href="{{ url_for('admin.admin_person_edit', person_id=person.id) }}" class="btn btn-xs btn-outline-dark mr-1">Edit</a>
+            {% if person.email %}
+              <form method="post" action="{{ url_for('admin.admin_people_invite_donation', person_id=person.id) }}" class="d-inline">
+                <button class="btn btn-xs btn-outline-warning" title="Send donation invite email">Invite</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-4">No people records found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="small text-muted mt-2">{{ people|length }} record{{ 's' if people|length != 1 }}</p>
+{% endblock %}
