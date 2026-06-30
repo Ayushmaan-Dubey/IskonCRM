@@ -114,14 +114,14 @@ def create_app():
             if 'user' in existing_tables:
                 cols = [c['name'] for c in inspector.get_columns('user')]
                 for col, ddl in [
-                    ('is_admin',             'ALTER TABLE "user" ADD COLUMN is_admin BOOLEAN DEFAULT 0'),
+                    ('is_admin',             'ALTER TABLE "user" ADD COLUMN is_admin BOOLEAN DEFAULT FALSE'),
                     ('last_name',            'ALTER TABLE "user" ADD COLUMN last_name VARCHAR'),
                     ('legal_name',           'ALTER TABLE "user" ADD COLUMN legal_name VARCHAR'),
                     ('username',             'ALTER TABLE "user" ADD COLUMN username VARCHAR'),
                     ('phone_number',         'ALTER TABLE "user" ADD COLUMN phone_number VARCHAR'),
                     ('role',                 "ALTER TABLE \"user\" ADD COLUMN role VARCHAR DEFAULT 'user'"),
-                    ('must_change_password', 'ALTER TABLE "user" ADD COLUMN must_change_password BOOLEAN DEFAULT 0'),
-                    ('first_time_at_temple', 'ALTER TABLE "user" ADD COLUMN first_time_at_temple BOOLEAN DEFAULT 0'),
+                    ('must_change_password', 'ALTER TABLE "user" ADD COLUMN must_change_password BOOLEAN DEFAULT FALSE'),
+                    ('first_time_at_temple', 'ALTER TABLE "user" ADD COLUMN first_time_at_temple BOOLEAN DEFAULT FALSE'),
                     ('contact_date',         'ALTER TABLE "user" ADD COLUMN contact_date DATE'),
                     ('area',                 'ALTER TABLE "user" ADD COLUMN area VARCHAR'),
                     ('interests',            'ALTER TABLE "user" ADD COLUMN interests VARCHAR'),
@@ -143,7 +143,7 @@ def create_app():
                     ('sponsor_email',          'ALTER TABLE sponsorship ADD COLUMN sponsor_email VARCHAR'),
                     ('sponsorship_categories', 'ALTER TABLE sponsorship ADD COLUMN sponsorship_categories VARCHAR'),
                     ('donation_amount',        'ALTER TABLE sponsorship ADD COLUMN donation_amount VARCHAR'),
-                    ('not_yet_paid',           'ALTER TABLE sponsorship ADD COLUMN not_yet_paid BOOLEAN DEFAULT 0'),
+                    ('not_yet_paid',           'ALTER TABLE sponsorship ADD COLUMN not_yet_paid BOOLEAN DEFAULT FALSE'),
                     ('source',                 "ALTER TABLE sponsorship ADD COLUMN source VARCHAR DEFAULT 'internal'"),
                     ('person_id',              'ALTER TABLE sponsorship ADD COLUMN person_id INTEGER REFERENCES person(id)'),
                     ('created_by_user_id_nullable_fix', None),  # handled below
