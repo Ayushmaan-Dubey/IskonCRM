@@ -5,9 +5,9 @@
 {% block content %}
 <div class="row justify-content-center">
   <div class="col-lg-8">
-    <span class="section-kicker">User Sign Up</span>
+    <span class="section-kicker">Account Sign Up</span>
     <h1 class="mt-2">Create your Temple CRM account</h1>
-    <p class="muted">Based on the design brief, each user profile stores legal name, username, email, phone number, and timestamps all future entries.</p>
+    <p class="muted">Every account is either an Admin or a Super Admin. Each profile stores legal name, username, email, phone number, and timestamps all future entries.</p>
 
     <form method="POST" class="mt-4">
       {% if errors %}
@@ -19,6 +19,31 @@
           </ul>
         </div>
       {% endif %}
+
+      {% set chosen_type = form.account_type if form else 'admins' %}
+      <div class="form-section">
+        <h6 class="font-weight-bold mb-3">Account Type</h6>
+        <div class="form-row">
+          <div class="col-md-6 mb-2">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="account_type" id="type_admin" value="admins" {% if chosen_type != 'super_admin' %}checked{% endif %}>
+              <label class="form-check-label" for="type_admin">
+                Admin
+                <small class="d-block text-muted">Day-to-day staff: guest intake, sponsorship entry, reports.</small>
+              </label>
+            </div>
+          </div>
+          <div class="col-md-6 mb-2">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="account_type" id="type_super" value="super_admin" {% if chosen_type == 'super_admin' %}checked{% endif %}>
+              <label class="form-check-label" for="type_super">
+                Super Admin
+                <small class="d-block text-muted">Full oversight, plus Fact Sheet, Payment Settings, and Spreadsheet Import.</small>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div class="form-section">
         <div class="form-row">
@@ -54,14 +79,14 @@
             <input type="password" class="form-control" id="password2" name="password2" required>
           </div>
           <div class="form-group col-md-4">
-            <label for="pin">User PIN</label>
+            <label for="pin">Account PIN</label>
             <input type="password" class="form-control" id="pin" name="pin" required>
+            <small class="form-text text-muted">Admin PIN for an Admin account, or the Super Admin PIN for a Super Admin account.</small>
           </div>
         </div>
       </div>
 
       <button type="submit" class="btn btn-dark">Create Account</button>
-      <a href="{{ url_for('auth.admin_sign_up') }}" class="btn btn-outline-secondary ml-2">Admin Sign Up</a>
     </form>
   </div>
 </div>

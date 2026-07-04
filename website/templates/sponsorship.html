@@ -17,10 +17,12 @@
 
   <div class="form-section">
     <h5 class="mb-3">Sponsor Details</h5>
+    <p class="muted small mb-2" id="sponsorMatchHint" style="display:none;">This person is already in the People database — pick a match below to autofill, or keep typing to add someone new.</p>
     <div class="form-row">
-      <div class="form-group col-md-6">
+      <div class="form-group col-md-6 position-relative">
         <label>Legal Name <span class="text-danger">*</span></label>
-        <input type="text" name="sponsor_legal_name" class="form-control" value="{{ form.sponsor_legal_name if form else '' }}" required>
+        <input type="text" id="sponsorLegalName" name="sponsor_legal_name" class="form-control" value="{{ form.sponsor_legal_name if form else '' }}" autocomplete="off" required>
+        <div id="sponsorMatchList" class="list-group position-absolute w-100" style="z-index: 1000; display:none;"></div>
       </div>
       <div class="form-group col-md-6">
         <label>Spiritual Name</label>
@@ -30,11 +32,11 @@
     <div class="form-row">
       <div class="form-group col-md-6">
         <label>Phone Number <span class="text-danger">*</span></label>
-        <input type="tel" name="sponsor_phone_number" class="form-control" value="{{ form.sponsor_phone_number if form else '' }}" pattern="[0-9]+" inputmode="numeric" required>
+        <input type="tel" id="sponsorPhone" name="sponsor_phone_number" class="form-control" value="{{ form.sponsor_phone_number if form else '' }}" pattern="[0-9]+" inputmode="numeric" required>
       </div>
       <div class="form-group col-md-6">
         <label>Email</label>
-        <input type="email" name="sponsor_email" class="form-control" value="{{ form.sponsor_email if form else '' }}">
+        <input type="email" id="sponsorEmail" name="sponsor_email" class="form-control" value="{{ form.sponsor_email if form else '' }}">
       </div>
     </div>
     <div class="form-row">
@@ -110,4 +112,67 @@
 
   <button class="btn btn-dark">Save Sponsorship</button>
 </form>
+
+<script>
+(function () {
+  var nameInput = document.getElementById('sponsorLegalName');
+  var emailInput = document.getElementById('sponsorEmail');
+  var phoneInput = document.getElementById('sponsorPhone');
+  var matchList = document.getElementById('sponsorMatchList');
+  var matchHint = document.getElementById('sponsorMatchHint');
+  var debounceTimer = null;
+
+  function hideMatches() {
+    matchList.style.display = 'none';
+    matchList.innerHTML = '';
+  }
+
+  function renderMatches(people) {
+    matchList.innerHTML = '';
+    if (!people.length) {
+      hideMatches();
+      matchHint.style.display = 'none';
+      return;
+    }
+    matchHint.style.display = 'block';
+    people.forEach(function (person) {
+      var item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'list-group-item list-group-item-action py-1 px-2 small';
+      var tags = person.tags.length ? ' (' + person.tags.join(', ') + ')' : '';
+      item.textContent = person.full_name + tags + (person.phone_number ? ' — ' + person.phone_number : '');
+      item.addEventListener('click', function () {
+        nameInput.value = person.full_name;
+        emailInput.value = person.email;
+        phoneInput.value = person.phone_number;
+        hideMatches();
+      });
+      matchList.appendChild(item);
+    });
+    matchList.style.display = 'block';
+  }
+
+  nameInput.addEventListener('input', function () {
+    var q = nameInput.value.trim();
+    window.clearTimeout(debounceTimer);
+    if (q.length < 3) {
+      hideMatches();
+      matchHint.style.display = 'none';
+      return;
+    }
+    debounceTimer = window.setTimeout(function () {
+      fetch('{{ url_for("views.api_people_search") }}?q=' + encodeURIComponent(q))
+        .then(function (res) { return res.json(); })
+        .then(renderMatches)
+        .catch(hideMatches);
+    }, 250);
+  });
+
+  document.addEventListener('click', function (event) {
+    if (event.target !== nameInput && !matchList.contains(event.target)) {
+      hideMatches();
+    }
+  });
+})();
+</script>
 {% endblock %}

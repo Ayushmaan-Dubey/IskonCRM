@@ -1,0 +1,38 @@
+{% extends 'base.HTML' %}
+{% block title %}Import Spreadsheet — Super Admin{% endblock %}
+{% block content %}
+<span class="section-kicker">Super Admin · People</span>
+<h1 class="mt-2 mb-1">Import Spreadsheet</h1>
+<p class="muted">Bulk-add or update People records from a .xlsx file. Matches existing people by email, then phone number, so re-uploading the same file is safe.</p>
+
+<div class="table-card mb-4">
+  <h6 class="font-weight-bold mb-2">Expected columns</h6>
+  <p class="small text-muted mb-2">Header row, in any order. Only <strong>Full Name</strong> is required.</p>
+  <table class="table table-sm mb-3">
+    <thead>
+      <tr>{% for c in columns %}<th>{{ c }}</th>{% endfor %}</tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Jane Doe</td>
+        <td>jane@example.com</td>
+        <td>5125551234</td>
+        <td>visitor, donator</td>
+        <td>Met at Sunday feast</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="small text-muted mb-0">Tags column accepts any combination of <code>visitor</code>, <code>donator</code>, <code>member</code> separated by commas or semicolons.</p>
+  <a href="{{ url_for('admin.admin_import_template_xlsx') }}" class="btn btn-sm btn-outline-dark mt-2">Download Template</a>
+</div>
+
+<div class="table-card">
+  <form method="post" enctype="multipart/form-data" data-prevent-double-submit>
+    <div class="form-group">
+      <label for="spreadsheet">Spreadsheet file (.xlsx)</label>
+      <input type="file" class="form-control-file" id="spreadsheet" name="spreadsheet" accept=".xlsx" required>
+    </div>
+    <button class="btn btn-dark">Upload &amp; Import</button>
+  </form>
+</div>
+{% endblock %}

@@ -2,7 +2,7 @@ import io
 import base64
 from datetime import datetime, timedelta
 
-from flask import (Blueprint, Response, current_app, flash, redirect,
+from flask import (Blueprint, Response, current_app, flash, jsonify, redirect,
                    render_template, request, send_from_directory, url_for)
 from flask_login import current_user, login_required
 from sqlalchemy import desc
@@ -305,6 +305,28 @@ def sponsorship():
         sponsorship_categories=SPONSORSHIP_CATEGORIES,
         payment_options=PAYMENT_OPTIONS,
     )
+
+
+@views.route('/api/people/search')
+@login_required
+def api_people_search():
+    q = request.args.get('q', '').strip()
+    if len(q) < 3:
+        return jsonify([])
+    like = f'%{q}%'
+    matches = Person.query.filter(
+        db.or_(Person.full_name.ilike(like), Person.email.ilike(like), Person.phone_number.ilike(like))
+    ).order_by(Person.full_name).limit(8).all()
+    return jsonify([
+        {
+            'id': p.id,
+            'full_name': p.full_name,
+            'email': p.email or '',
+            'phone_number': p.phone_number or '',
+            'tags': p.get_tags(),
+        }
+        for p in matches
+    ])
 
 
 def _send_not_yet_paid(email, name):

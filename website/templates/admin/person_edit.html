@@ -67,4 +67,50 @@
   <button type="submit" class="btn btn-dark">Save Changes</button>
   <a href="{{ url_for('admin.admin_people') }}" class="btn btn-link ml-2">Cancel</a>
 </form>
+
+<div class="table-card mt-4">
+  <h6 class="font-weight-bold mb-3">Linked Records</h6>
+  <p class="small text-muted mb-3">Every newcomer intake and sponsorship tied to this person, so you can see the full relationship at a glance.</p>
+
+  <h6 class="small font-weight-bold text-uppercase text-muted">Newcomer Visits</h6>
+  {% if guest_records %}
+    <div class="table-responsive mb-3">
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Date</th><th>WhatsApp</th><th>Referral</th></tr></thead>
+        <tbody>
+          {% for g in guest_records %}
+            <tr>
+              <td>{{ g.created_at.strftime('%Y-%m-%d') }}</td>
+              <td>{{ g.whatsapp_status or 'N/A' }}</td>
+              <td>{{ g.referral_sources or g.referral_other or 'N/A' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="small text-muted mb-3">No newcomer intake on record.</p>
+  {% endif %}
+
+  <h6 class="small font-weight-bold text-uppercase text-muted">Sponsorships / Donations</h6>
+  {% if sponsorship_records %}
+    <div class="table-responsive">
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Date</th><th>Categories</th><th>Amount</th><th>Payment</th></tr></thead>
+        <tbody>
+          {% for s in sponsorship_records %}
+            <tr>
+              <td>{{ s.sponsorship_date.strftime('%Y-%m-%d') if s.sponsorship_date else 'TBD' }}</td>
+              <td>{{ s.sponsorship_categories or s.sponsoring_for or 'N/A' }}</td>
+              <td>{{ s.donation_amount or s.amount_options or s.amount_other or 'N/A' }}</td>
+              <td>{{ 'Not Yet Paid' if s.not_yet_paid else (s.payment_methods or 'N/A') }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="small text-muted mb-0">No sponsorships on record.</p>
+  {% endif %}
+</div>
 {% endblock %}

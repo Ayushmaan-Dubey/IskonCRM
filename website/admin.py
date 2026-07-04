@@ -53,7 +53,7 @@ def admin_required(f):
     def decorated(*args, **kwargs):
         if not current_user.is_authenticated:
             flash('Please log in as admin to access this page.', 'info')
-            return redirect(url_for('auth.admin_login'))
+            return redirect(url_for('auth.login'))
         if not getattr(current_user, 'is_admin', False):
             flash('Access denied.', 'danger')
             return redirect(url_for('views.home'))
@@ -66,7 +66,7 @@ def super_admin_required(f):
     def decorated(*args, **kwargs):
         if not current_user.is_authenticated:
             flash('Please log in as admin to access this page.', 'info')
-            return redirect(url_for('auth.admin_login'))
+            return redirect(url_for('auth.login'))
         if not getattr(current_user, 'is_super_admin', False):
             flash('This page requires Super Admin access.', 'danger')
             return redirect(url_for('admin.admin_index'))
@@ -229,6 +229,132 @@ def admin_people_invite_donation(person_id):
     return redirect(url_for('admin.admin_people'))
 
 
+# ─── Spreadsheet Import (Super Admin only) ───────────────────
+
+IMPORT_COLUMNS = ['Full Name', 'Email', 'Phone', 'Tags', 'Notes']
+
+
+def _find_or_create_person_for_import(full_name, email, phone_number):
+    """Returns (person, was_created)."""
+    person = None
+    if email:
+        person = Person.query.filter_by(email=email).first()
+    if person is None and phone_number:
+        person = Person.query.filter(
+            Person.phone_number == phone_number,
+            Person.email.is_(None)
+        ).first()
+    if person is not None:
+        return person, False
+    person = Person(full_name=full_name, email=email or None, phone_number=phone_number or None)
+    db.session.add(person)
+    db.session.flush()
+    return person, True
+
+
+@admin.route('/admin/import', methods=['GET', 'POST'])
+@super_admin_required
+def admin_import_people():
+    if request.method == 'POST':
+        try:
+            from openpyxl import load_workbook
+        except ImportError:
+            flash('openpyxl is not installed. Run: pip install openpyxl', 'danger')
+            return render_template('admin/import_people.html', columns=IMPORT_COLUMNS)
+
+        file = request.files.get('spreadsheet')
+        if not file or not file.filename:
+            flash('Please select a .xlsx file to upload.', 'warning')
+            return render_template('admin/import_people.html', columns=IMPORT_COLUMNS)
+
+        wb = load_workbook(file, read_only=True, data_only=True)
+        ws = wb.active
+
+        rows = ws.iter_rows(values_only=True)
+        header = [str(c).strip().lower() if c else '' for c in next(rows, [])]
+
+        def col(name):
+            try:
+                return header.index(name)
+            except ValueError:
+                return None
+
+        idx_name = col('full name')
+        if idx_name is None:
+            flash('The spreadsheet must have a "Full Name" column. Download the template for the expected format.', 'danger')
+            return render_template('admin/import_people.html', columns=IMPORT_COLUMNS)
+
+        idx_email = col('email')
+        idx_phone = col('phone')
+        idx_tags = col('tags')
+        idx_notes = col('notes')
+
+        def cell(row, idx):
+            if idx is None or idx >= len(row) or row[idx] is None:
+                return ''
+            return str(row[idx]).strip()
+
+        created = updated = skipped = 0
+        for row in rows:
+            full_name = cell(row, idx_name)
+            if not full_name:
+                skipped += 1
+                continue
+            email = cell(row, idx_email) or None
+            phone = cell(row, idx_phone) or None
+            tags_raw = cell(row, idx_tags)
+            notes = cell(row, idx_notes) or None
+
+            person, was_created = _find_or_create_person_for_import(full_name, email, phone)
+            if was_created:
+                created += 1
+            else:
+                updated += 1
+            if notes:
+                person.notes = notes
+            for tag in [t.strip().lower() for t in tags_raw.replace(';', ',').split(',') if t.strip()]:
+                if tag in ('visitor', 'donator', 'member'):
+                    person.add_tag(tag)
+
+        db.session.commit()
+        flash(f'Import complete: {created} created, {updated} updated, {skipped} skipped.', 'success')
+        return redirect(url_for('admin.admin_people'))
+
+    return render_template('admin/import_people.html', columns=IMPORT_COLUMNS)
+
+
+@admin.route('/admin/import/template.xlsx')
+@super_admin_required
+def admin_import_template_xlsx():
+    import io
+    from flask import Response
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'People Import'
+    ws.append(IMPORT_COLUMNS)
+    ws.append(['Jane Doe', 'jane@example.com', '5125551234', 'visitor, donator', 'Met at Sunday feast'])
+
+    for cell in ws[1]:
+        cell.font = Font(bold=True, color='FFFFFF')
+        cell.fill = PatternFill('solid', fgColor='143642')
+        cell.alignment = Alignment(horizontal='center')
+    for col_cells in ws.columns:
+        max_len = max((len(str(c.value or '')) for c in col_cells), default=10)
+        ws.column_dimensions[col_cells[0].column_letter].width = min(max_len + 4, 50)
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return Response(
+        buf.read(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': 'attachment; filename=people-import-template.xlsx'},
+    )
+
+
 # ─── Home Program Outreach (SRS §6) ──────────────────────────
 
 @admin.route('/admin/hpo')
@@ -303,7 +429,13 @@ def admin_person_edit(person_id):
         db.session.commit()
         flash(f'Updated record for {person.full_name}.', 'success')
         return redirect(url_for('admin.admin_people'))
-    return render_template('admin/person_edit.html', person=person, locations=HPO_LOCATIONS)
+
+    guest_records = GuestIntake.query.filter_by(person_id=person.id).order_by(GuestIntake.created_at.desc()).all()
+    sponsorship_records = Sponsorship.query.filter_by(person_id=person.id).order_by(Sponsorship.created_at.desc()).all()
+    return render_template(
+        'admin/person_edit.html', person=person, locations=HPO_LOCATIONS,
+        guest_records=guest_records, sponsorship_records=sponsorship_records,
+    )
 
 
 # ─── Inventory Module (SRS §9) ───────────────────────────────

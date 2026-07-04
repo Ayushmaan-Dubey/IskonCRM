@@ -7,39 +7,29 @@ import os
 
 auth = Blueprint('auth', __name__)
 
-ROLE_OPTIONS = [
-    ('member', 'Member'),
-    ('user', 'User'),
-    ('sales', 'Sales'),
-    ('sunday_school_teacher', 'Sunday School Teacher'),
-    ('congregational_development', 'Congregational Development'),
-    ('admins', 'Admin'),
-    ('super_admin', 'Super Admin'),
-]
-
-USER_SIGNUP_PIN = os.environ.get('USER_SIGNUP_PIN', 'RR')
-ADMIN_SIGNUP_PIN = os.environ.get('ADMIN_SIGNUP_PIN', '2026')
-SUPER_ADMIN_SIGNUP_PIN = os.environ.get('SUPER_ADMIN_SIGNUP_PIN', 'SA2026')
+ADMIN_SIGNUP_PIN = os.environ.get('ADMIN_SIGNUP_PIN', 'RR')
+SUPER_ADMIN_SIGNUP_PIN = os.environ.get('SUPER_ADMIN_SIGNUP_PIN', '2026')
 
 
-@auth.route('/login', methods = ['Get', 'POST'])
+@auth.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
-        # Placeholder for authentication logic
-        user = User.query.filter_by(email=email).first() 
+        super_admin_pin = request.form.get('super_admin_pin', '').strip()
+        user = User.query.filter_by(email=email).first()
         if user:
             if check_password_hash(user.password, password):
-                flash('Logged in successfully!', 'success')
-                login_user(user, remember=True)
-                return redirect(url_for('views.home'))
+                if user.role == 'super_admin' and super_admin_pin != SUPER_ADMIN_SIGNUP_PIN:
+                    flash('Incorrect Super Admin PIN.', 'error')
+                else:
+                    flash('Logged in successfully!', 'success')
+                    login_user(user, remember=True)
+                    return redirect(url_for('views.home'))
             else:
                 flash('Incorrect password, try again.', 'error')
         else:
             flash('Email does not exist.', 'error')
-    data = request.form
-    print(data)
     return render_template("login.html", user=current_user)
 
 
@@ -60,9 +50,13 @@ def sign_up():
         username = request.form.get('username', '').strip()
         phone_number = request.form.get('phoneNumber', '').strip()
         pin = request.form.get('pin', '').strip()
+        account_type = request.form.get('account_type', 'admins').strip()
         firstName = legal_name.split()[0] if legal_name else request.form.get('firstName', '').strip()
         password1 = request.form.get('password1', '')
         password2 = request.form.get('password2', '')
+
+        if account_type not in ('admins', 'super_admin'):
+            account_type = 'admins'
 
         if not legal_name or not username or not email or not phone_number or not password1 or not password2 or not pin:
             errors.append('Please fill out all fields.')
@@ -70,8 +64,11 @@ def sign_up():
             errors.append('Passwords do not match.')
         if len(password1) < 6:
             errors.append('Password must be at least 6 characters.')
-        if pin != USER_SIGNUP_PIN:
-            errors.append('Incorrect user signup pin.')
+        if account_type == 'super_admin':
+            if pin != SUPER_ADMIN_SIGNUP_PIN:
+                errors.append('Incorrect Super Admin PIN.')
+        elif pin != ADMIN_SIGNUP_PIN:
+            errors.append('Incorrect Admin PIN.')
 
         # check for existing email when using the database
         if db is not None:
@@ -93,7 +90,8 @@ def sign_up():
                 legal_name=legal_name,
                 username=username,
                 phone_number=phone_number,
-                role='user',
+                role=account_type,
+                is_admin=True,
                 password=generate_password_hash(password1, method='pbkdf2:sha256'),
             )
             db.session.add(new_user)
@@ -105,106 +103,23 @@ def sign_up():
         flash('Account created successfully. You can now log in.', 'success')
         return redirect(url_for('auth.login'))
 
-    return render_template('sign-up.html', user =current_user)
+    return render_template('sign-up.html', user=current_user)
 
-# Admin-specific signup (creates an is_admin user) and login routes
+
+# Old admin-specific signup/login URLs now point at the unified pages above,
+# kept so existing bookmarks/emailed links don't break.
 @auth.route('/admin/signup', methods=['GET', 'POST'])
 def admin_sign_up():
-    # behave like regular signup but create an admin user
-    errors = []
-    if request.method == 'POST':
-        email = request.form.get('email', '').strip()
-        legal_name = request.form.get('legalName', '').strip()
-        username = request.form.get('username', '').strip()
-        phone_number = request.form.get('phoneNumber', '').strip()
-        firstName = legal_name.split()[0] if legal_name else request.form.get('firstName', '').strip()
-        password1 = request.form.get('password1', '')
-        password2 = request.form.get('password2', '')
-        pin = request.form.get('pin', '').strip()
-
-        if not legal_name or not username or not email or not phone_number or not password1 or not password2 or not pin:
-            errors.append('Please fill out all fields.')
-        if password1 != password2:
-            errors.append('Passwords do not match.')
-        if len(password1) < 6:
-            errors.append('Password must be at least 6 characters.')
-
-        # verify pin — admin pin OR super_admin pin accepted
-        is_super = (pin == SUPER_ADMIN_SIGNUP_PIN)
-        if pin != ADMIN_SIGNUP_PIN and not is_super:
-            errors.append('Incorrect admin pin.')
-
-        if db is not None:
-            existing_user = User.query.filter_by(email=email).first()
-            if existing_user:
-                errors.append('An account with that email already exists.')
-            existing_username = User.query.filter_by(username=username).first()
-            if existing_username:
-                errors.append('That username is already taken.')
-
-        if errors:
-            return render_template('admin-sign-up.html', errors=errors, form=request.form)
-
-        if db is not None:
-            assigned_role = 'super_admin' if is_super else 'admins'
-            new_user = User(
-                email=email,
-                first_name=firstName,
-                legal_name=legal_name,
-                username=username,
-                phone_number=phone_number,
-                password=generate_password_hash(password1, method='pbkdf2:sha256'),
-                is_admin=True,
-                role=assigned_role,
-            )
-            db.session.add(new_user)
-            db.session.commit()
-        else:
-            pass
-
-        flash('Admin account created successfully. You can now log in.', 'success')
-        return redirect(url_for('auth.admin_login'))
-
-    return render_template('admin-sign-up.html', errors=errors)
+    return redirect(url_for('auth.sign_up'))
 
 
 @auth.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
-    errors = []
-    if request.method == 'POST':
-        email = request.form.get('email', '').strip()
-        password = request.form.get('password', '')
+    return redirect(url_for('auth.login'))
 
-        if not email or not password:
-            errors.append('Please enter both email and password.')
-            return render_template('admin-login.html', errors=errors)
-
-        # local imports to avoid duplication
-        from werkzeug.security import check_password_hash
-        from flask_login import login_user
-
-        if db is not None:
-            user = User.query.filter_by(email=email).first()
-            if not user or not getattr(user, 'is_admin', False):
-                errors.append('Admin account not found.')
-                return render_template('admin-login.html', errors=errors)
-
-            if not check_password_hash(user.password, password):
-                errors.append('Incorrect password.')
-                return render_template('admin-login.html', errors=errors)
-
-            login_user(user)
-            flash('Logged in as admin.', 'success')
-            return redirect(url_for('admin.admin_index'))
-        else:
-            errors.append('Database not available for login.')
-            return render_template('admin-login.html', errors=errors)
-
-    return render_template('admin-login.html')
 
 @auth.route('/admin/logout')
 def admin_logout():
-    """Log out an admin and redirect to the admin login page."""
     logout_user()
     flash('You have been logged out.', 'info')
-    return redirect(url_for('auth.admin_login'))
+    return redirect(url_for('auth.login'))
