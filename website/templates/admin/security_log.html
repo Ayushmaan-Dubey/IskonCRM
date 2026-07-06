@@ -1,0 +1,49 @@
+{% extends 'base.HTML' %}
+{% block title %}Security Log — Super Admin{% endblock %}
+{% block content %}
+<span class="section-kicker">Super Admin · Oversight</span>
+<h1 class="mt-2 mb-1">Security Log</h1>
+<p class="muted">Every login, logout, failed login, account lockout, record deletion, role change, and admin action — most recent 300 shown.</p>
+
+<form class="form-inline mb-3">
+  <label class="mr-2 small font-weight-bold">Filter by event:</label>
+  <select name="event_type" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
+    <option value="">All</option>
+    {% for et in event_types %}
+      <option value="{{ et }}" {% if event_filter == et %}selected{% endif %}>{{ et.replace('_', ' ')|title }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+<div class="table-card">
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Event</th>
+          <th>Actor</th>
+          <th>Target</th>
+          <th>Description</th>
+          <th>IP</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in events %}
+          <tr>
+            <td class="small text-nowrap">{{ e.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            <td><span class="badge badge-secondary">{{ e.event_type.replace('_', ' ')|title }}</span></td>
+            <td class="small">{{ e.actor.display_name if e.actor else (e.actor_email or 'Unknown') }}</td>
+            <td class="small text-muted">{{ (e.target_type + ' #' + e.target_id|string) if e.target_type else '' }}</td>
+            <td class="small">{{ e.description or '' }}</td>
+            <td class="small text-muted">{{ e.ip_address or '' }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6" class="text-center text-muted py-4">No security events recorded yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<p class="small text-muted mt-2">{{ events|length }} event{{ 's' if events|length != 1 }} shown</p>
+{% endblock %}

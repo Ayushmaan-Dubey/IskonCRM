@@ -14,6 +14,8 @@ services:
           property: connectionString
       - key: PYTHON_VERSION
         value: 3.11.9
+      - key: FORCE_HTTPS
+        value: true
 
 databases:
   - name: temple-crm-db

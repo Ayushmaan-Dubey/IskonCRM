@@ -166,6 +166,19 @@ class PaymentSettings(db.Model):
     updated_by_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
 
+class SecurityAuditLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    event_type = db.Column(db.String(50), nullable=False)
+    actor_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    actor_email = db.Column(db.String(150), nullable=True)
+    target_type = db.Column(db.String(50), nullable=True)
+    target_id = db.Column(db.Integer, nullable=True)
+    description = db.Column(db.String(500), nullable=True)
+    ip_address = db.Column(db.String(50), nullable=True)
+    created_at = db.Column(db.DateTime(timezone=True), default=func.now(), nullable=False)
+    actor = db.relationship('User', foreign_keys=[actor_user_id])
+
+
 if db is not None:
     class User(db.Model, UserMixin):
         id = db.Column(db.Integer, primary_key=True)
@@ -191,6 +204,8 @@ if db is not None:
         interests = db.Column(db.String(500), nullable=True)
         event_source = db.Column(db.String(200), nullable=True)
         created_by_admin = db.Column(db.String(200), nullable=True)
+        failed_login_attempts = db.Column(db.Integer, default=0, nullable=False)
+        locked_until = db.Column(db.DateTime(timezone=True), nullable=True)
 
         @property
         def is_super_admin(self):

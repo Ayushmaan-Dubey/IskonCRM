@@ -1,6 +1,9 @@
+from datetime import datetime, timedelta
+
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from .models import User
 from . import db
+from .audit import log_event
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
 import os
@@ -9,6 +12,23 @@ auth = Blueprint('auth', __name__)
 
 ADMIN_SIGNUP_PIN = os.environ.get('ADMIN_SIGNUP_PIN', 'RR')
 SUPER_ADMIN_SIGNUP_PIN = os.environ.get('SUPER_ADMIN_SIGNUP_PIN', '2026')
+
+MAX_FAILED_ATTEMPTS = 5
+LOCKOUT_DURATION = timedelta(minutes=15)
+
+
+def _register_failure(user, reason):
+    user.failed_login_attempts += 1
+    if user.failed_login_attempts >= MAX_FAILED_ATTEMPTS:
+        user.locked_until = datetime.utcnow() + LOCKOUT_DURATION
+        db.session.commit()
+        log_event('account_locked', f'Locked after {MAX_FAILED_ATTEMPTS} failed attempts.', actor=user)
+        flash(f'Account locked for {int(LOCKOUT_DURATION.total_seconds() // 60)} minutes due to repeated failed logins.', 'error')
+    else:
+        db.session.commit()
+        remaining = MAX_FAILED_ATTEMPTS - user.failed_login_attempts
+        log_event('login_failed', reason, actor=user)
+        flash(f'{reason} ({remaining} attempt{"s" if remaining != 1 else ""} remaining before lockout)', 'error')
 
 
 @auth.route('/login', methods=['GET', 'POST'])
@@ -19,17 +39,26 @@ def login():
         super_admin_pin = request.form.get('super_admin_pin', '').strip()
         user = User.query.filter_by(email=email).first()
         if user:
-            if check_password_hash(user.password, password):
+            if user.locked_until and user.locked_until > datetime.utcnow():
+                minutes_left = max(1, int((user.locked_until - datetime.utcnow()).total_seconds() // 60))
+                flash(f'This account is locked. Try again in about {minutes_left} minute(s).', 'error')
+                log_event('account_locked', 'Login attempted while account is locked.', actor=user)
+            elif check_password_hash(user.password, password):
                 if user.role == 'super_admin' and super_admin_pin != SUPER_ADMIN_SIGNUP_PIN:
-                    flash('Incorrect Super Admin PIN.', 'error')
+                    _register_failure(user, 'Incorrect Super Admin PIN.')
                 else:
+                    user.failed_login_attempts = 0
+                    user.locked_until = None
+                    db.session.commit()
+                    log_event('login_success', 'Logged in.', actor=user)
                     flash('Logged in successfully!', 'success')
                     login_user(user, remember=True)
                     return redirect(url_for('views.home'))
             else:
-                flash('Incorrect password, try again.', 'error')
+                _register_failure(user, 'Incorrect password, try again.')
         else:
             flash('Email does not exist.', 'error')
+            log_event('login_failed', 'Login attempted with unregistered email.', actor_email=email)
     return render_template("login.html", user=current_user)
 
 
@@ -37,6 +66,7 @@ def login():
 @auth.route('/logout')
 @login_required
 def logout():
+    log_event('logout', 'Logged out.', actor=current_user)
     logout_user()
     return redirect(url_for('auth.login'))
 
@@ -120,6 +150,8 @@ def admin_login():
 
 @auth.route('/admin/logout')
 def admin_logout():
+    if current_user.is_authenticated:
+        log_event('logout', 'Logged out.', actor=current_user)
     logout_user()
     flash('You have been logged out.', 'info')
     return redirect(url_for('auth.login'))

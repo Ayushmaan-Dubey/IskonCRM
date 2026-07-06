@@ -8,6 +8,7 @@ from flask_login import current_user, login_required
 from sqlalchemy import desc
 
 from . import db
+from .audit import log_event
 from .models import GuestIntake, Sponsorship, Person, FactSheet, PaymentSettings
 
 views = Blueprint('views', __name__)
@@ -366,8 +367,11 @@ def delete_guest_record(record_id):
         return redirect(url_for('views.home'))
     record = GuestIntake.query.get_or_404(record_id)
     guest_name = record.full_name
+    record_id = record.id
     db.session.delete(record)
     db.session.commit()
+    log_event('record_deleted', f'Deleted newcomer record for {guest_name}.', actor=current_user,
+              target_type='GuestIntake', target_id=record_id)
     flash(f'Deleted newcomer record for {guest_name}.', 'success')
     return redirect(url_for('views.reports'))
 
@@ -379,8 +383,11 @@ def delete_sponsorship_record(record_id):
         return redirect(url_for('views.home'))
     record = Sponsorship.query.get_or_404(record_id)
     sponsor_name = record.sponsor_legal_name
+    record_id = record.id
     db.session.delete(record)
     db.session.commit()
+    log_event('record_deleted', f'Deleted sponsorship record for {sponsor_name}.', actor=current_user,
+              target_type='Sponsorship', target_id=record_id)
     flash(f'Deleted sponsorship record for {sponsor_name}.', 'success')
     return redirect(url_for('views.reports'))
 

@@ -10,8 +10,9 @@ from werkzeug.security import generate_password_hash
 
 from .models import (User, Person, GuestIntake, Sponsorship,
                      InventoryItem, InventoryAuditLog, MessageTemplate,
-                     FactSheet, PaymentSettings)
+                     FactSheet, PaymentSettings, SecurityAuditLog)
 from . import db
+from .audit import log_event
 
 try:
     from .email_utils import send_new_user_email
@@ -103,9 +104,12 @@ def admin_update_user_role(user_id):
     if selected_role == 'super_admin' and not current_user.is_super_admin:
         flash('Only a Super Admin can assign the Super Admin role.', 'danger')
         return redirect(url_for('admin.admin_users'))
+    old_role = user.role
     user.role = selected_role
     user.is_admin = selected_role in ('admins', 'super_admin')
     db.session.commit()
+    log_event('role_changed', f'{user.email}: {old_role} -> {selected_role}', actor=current_user,
+              target_type='User', target_id=user.id)
     flash(f'Updated role for {user.email}.', 'success')
     return redirect(url_for('admin.admin_users'))
 
@@ -171,6 +175,8 @@ def admin_create_user():
             )
             db.session.add(new_user)
             db.session.commit()
+            log_event('admin_action', f'Created user {email}.', actor=current_user,
+                      target_type='User', target_id=new_user.id)
             sent, err = send_new_user_email(email, temp_password)
             if not sent:
                 flash(f'User created but email failed: {err}', 'warning')
@@ -317,6 +323,8 @@ def admin_import_people():
                     person.add_tag(tag)
 
         db.session.commit()
+        log_event('admin_action', f'Spreadsheet import: {created} created, {updated} updated, {skipped} skipped.',
+                  actor=current_user)
         flash(f'Import complete: {created} created, {updated} updated, {skipped} skipped.', 'success')
         return redirect(url_for('admin.admin_people'))
 
@@ -582,6 +590,7 @@ def admin_fact_sheet():
             db.session.add(new_sheet)
 
         db.session.commit()
+        log_event('admin_action', 'Updated Temple Fact Sheet image.', actor=current_user)
         flash('Temple Fact Sheet updated successfully.', 'success')
         return redirect(url_for('admin.admin_fact_sheet'))
 
@@ -654,10 +663,33 @@ def admin_payment_settings():
         settings.updated_at = datetime.utcnow()
         settings.updated_by_user_id = current_user.id
         db.session.commit()
+        log_event('admin_action', 'Updated payment settings.', actor=current_user)
         flash('Payment settings saved.', 'success')
         return redirect(url_for('admin.admin_payment_settings'))
 
     return render_template('admin/payment_settings.html', settings=settings)
+
+
+# ─── Security Audit Log — Super Admin only ───────────────────
+
+SECURITY_EVENT_TYPES = [
+    'login_success', 'login_failed', 'account_locked', 'logout',
+    'record_deleted', 'role_changed', 'admin_action',
+]
+
+
+@admin.route('/admin/security-log')
+@super_admin_required
+def admin_security_log():
+    event_filter = request.args.get('event_type', '')
+    query = SecurityAuditLog.query
+    if event_filter:
+        query = query.filter_by(event_type=event_filter)
+    events = query.order_by(SecurityAuditLog.created_at.desc()).limit(300).all()
+    return render_template(
+        'admin/security_log.html', events=events,
+        event_types=SECURITY_EVENT_TYPES, event_filter=event_filter,
+    )
 
 
 # ─── Thursday Broadcast (SRS §4.3) ───────────────────────────

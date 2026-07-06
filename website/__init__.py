@@ -91,6 +91,23 @@ def create_app():
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret')
     app.config['ADMIN_SIGNUP_ENABLED'] = os.environ.get('ADMIN_SIGNUP_ENABLED', 'false').lower() in ('1', 'true', 'yes')
 
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_for=1)
+
+    try:
+        from flask_talisman import Talisman
+        force_https = os.environ.get('FORCE_HTTPS', 'false').lower() in ('1', 'true', 'yes')
+        csp = {
+            'default-src': "'self'",
+            'script-src': ["'self'", "'unsafe-inline'", 'https://code.jquery.com', 'https://cdn.jsdelivr.net'],
+            'style-src': ["'self'", "'unsafe-inline'", 'https://stackpath.bootstrapcdn.com', 'https://fonts.googleapis.com'],
+            'font-src': ["'self'", 'https://fonts.gstatic.com', 'https://stackpath.bootstrapcdn.com'],
+            'img-src': ["'self'", 'data:'],
+        }
+        Talisman(app, force_https=force_https, strict_transport_security=force_https, content_security_policy=csp)
+    except ImportError:
+        pass
+
     if db is not None:
         database_url = os.environ.get('DATABASE_URL')
         if database_url:
@@ -127,6 +144,8 @@ def create_app():
                     ('interests',            'ALTER TABLE "user" ADD COLUMN interests VARCHAR'),
                     ('event_source',         'ALTER TABLE "user" ADD COLUMN event_source VARCHAR'),
                     ('created_by_admin',     'ALTER TABLE "user" ADD COLUMN created_by_admin VARCHAR'),
+                    ('failed_login_attempts', 'ALTER TABLE "user" ADD COLUMN failed_login_attempts INTEGER DEFAULT 0'),
+                    ('locked_until',         'ALTER TABLE "user" ADD COLUMN locked_until TIMESTAMP'),
                 ]:
                     if col not in cols:
                         try:
