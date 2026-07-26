@@ -4,6 +4,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from .models import User
 from . import db
 from .audit import log_event
+from .utils import format_phone
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
 import os
@@ -78,7 +79,7 @@ def sign_up():
         email = request.form.get('email', '').strip()
         legal_name = request.form.get('legalName', '').strip()
         username = request.form.get('username', '').strip()
-        phone_number = request.form.get('phoneNumber', '').strip()
+        phone_number = format_phone(request.form.get('phoneNumber', '').strip())
         pin = request.form.get('pin', '').strip()
         account_type = request.form.get('account_type', 'admins').strip()
         firstName = legal_name.split()[0] if legal_name else request.form.get('firstName', '').strip()

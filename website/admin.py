@@ -10,9 +10,11 @@ from werkzeug.security import generate_password_hash
 
 from .models import (User, Person, GuestIntake, Sponsorship,
                      InventoryItem, InventoryAuditLog, MessageTemplate,
-                     FactSheet, PaymentSettings, SecurityAuditLog)
+                     FactSheet, PaymentSettings, SecurityAuditLog, PendingNewcomer)
 from . import db
 from .audit import log_event
+from .utils import format_phone
+from .views import _create_guest_intake_record
 
 try:
     from .email_utils import send_new_user_email
@@ -114,6 +116,43 @@ def admin_update_user_role(user_id):
     return redirect(url_for('admin.admin_users'))
 
 
+@admin.route('/admin/users/<int:user_id>/delete', methods=['POST'])
+@super_admin_required
+def admin_delete_user(user_id):
+    user = User.query.get_or_404(user_id)
+    if user.id == current_user.id:
+        flash('You cannot delete your own account.', 'danger')
+        return redirect(url_for('admin.admin_users'))
+    if user.role == 'super_admin' and User.query.filter_by(role='super_admin').count() <= 1:
+        flash('Cannot delete the only remaining Super Admin.', 'danger')
+        return redirect(url_for('admin.admin_users'))
+    email = user.email
+    try:
+        db.session.delete(user)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        flash(f'{email} has records tied to their account (newcomers, sponsorships, etc.) and cannot be deleted. '
+              f'Use "Reset Password" instead to give them fresh credentials without losing that data.', 'warning')
+        return redirect(url_for('admin.admin_users'))
+    log_event('admin_action', f'Deleted user account {email}.', actor=current_user)
+    flash(f'Deleted account for {email}.', 'success')
+    return redirect(url_for('admin.admin_users'))
+
+
+@admin.route('/admin/users/<int:user_id>/reset-password', methods=['POST'])
+@super_admin_required
+def admin_reset_user_password(user_id):
+    user = User.query.get_or_404(user_id)
+    new_password = secrets.token_urlsafe(9)
+    user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
+    user.must_change_password = True
+    db.session.commit()
+    log_event('admin_action', f'Reset password for {user.email}.', actor=current_user, target_type='User', target_id=user.id)
+    flash(f'New password for {user.email}: {new_password}', 'success')
+    return redirect(url_for('admin.admin_users'))
+
+
 @admin.route('/admin/create-user', methods=['GET', 'POST'])
 @admin_required
 def admin_create_user():
@@ -122,7 +161,7 @@ def admin_create_user():
         email = request.form.get('email', '').strip()
         legal_name = request.form.get('legalName', '').strip()
         username = request.form.get('username', '').strip()
-        phone_number = request.form.get('phoneNumber', '').strip()
+        phone_number = format_phone(request.form.get('phoneNumber', '').strip())
         firstName = legal_name.split()[0] if legal_name else request.form.get('firstName', '').strip()
         lastName = request.form.get('lastName', '').strip()
         first_time = request.form.get('first_time_at_temple', 'no') == 'yes'
@@ -186,6 +225,50 @@ def admin_create_user():
         return redirect(url_for('admin.admin_users'))
 
     return render_template('admin/create_user.html')
+
+
+# ─── Newcomer Requests (public self-signup, pending approval) ─
+
+@admin.route('/admin/newcomer-requests')
+@admin_required
+def admin_newcomer_requests():
+    pending = PendingNewcomer.query.order_by(PendingNewcomer.submitted_at.asc()).all()
+    return render_template('admin/newcomer_requests.html', pending=pending)
+
+
+@admin.route('/admin/newcomer-requests/<int:request_id>/approve', methods=['POST'])
+@admin_required
+def admin_newcomer_request_approve(request_id):
+    req = PendingNewcomer.query.get_or_404(request_id)
+    _create_guest_intake_record(
+        req.full_name, req.phone_number, req.email, req.notes, req.first_time_at_temple,
+        req.whatsapp_status,
+        req.referral_sources.split(', ') if req.referral_sources else [],
+        req.referral_other,
+        req.residence_areas.split(', ') if req.residence_areas else [],
+        req.residence_other,
+        req.interested_in_volunteering, req.janmashtami_setup_help,
+        current_user.id,
+    )
+    name = req.full_name
+    db.session.delete(req)
+    db.session.commit()
+    log_event('admin_action', f'Approved public newcomer request for {name}.', actor=current_user,
+              target_type='GuestIntake')
+    flash(f'{name} approved and added to the database.', 'success')
+    return redirect(url_for('admin.admin_newcomer_requests'))
+
+
+@admin.route('/admin/newcomer-requests/<int:request_id>/reject', methods=['POST'])
+@admin_required
+def admin_newcomer_request_reject(request_id):
+    req = PendingNewcomer.query.get_or_404(request_id)
+    name = req.full_name
+    db.session.delete(req)
+    db.session.commit()
+    log_event('admin_action', f'Rejected public newcomer request for {name}.', actor=current_user)
+    flash(f'Request from {name} rejected and removed.', 'info')
+    return redirect(url_for('admin.admin_newcomer_requests'))
 
 
 # ─── Unified People / Member Database (SRS §2) ───────────────
@@ -307,7 +390,7 @@ def admin_import_people():
                 skipped += 1
                 continue
             email = cell(row, idx_email) or None
-            phone = cell(row, idx_phone) or None
+            phone = format_phone(cell(row, idx_phone)) or None
             tags_raw = cell(row, idx_tags)
             notes = cell(row, idx_notes) or None
 
@@ -427,7 +510,7 @@ def admin_person_edit(person_id):
     if request.method == 'POST':
         person.full_name = request.form.get('full_name', '').strip() or person.full_name
         person.email = request.form.get('email', '').strip() or None
-        person.phone_number = request.form.get('phone_number', '').strip() or None
+        person.phone_number = format_phone(request.form.get('phone_number', '').strip()) or None
         person.location = request.form.get('location', '').strip() or None
         person.notes = request.form.get('notes', '').strip() or None
         person.home_program_outreach_participant = request.form.get('hpo') == 'yes'

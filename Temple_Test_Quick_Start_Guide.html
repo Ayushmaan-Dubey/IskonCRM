@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Temple CRM — Today's Test Guide</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      color: #1a1a2e;
+      background: #f8f8f6;
+      padding: 24px 14px;
+    }
+
+    .page {
+      max-width: 640px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.08);
+      padding: 32px 28px;
+    }
+
+    .doc-header {
+      border-bottom: 3px solid #143642;
+      padding-bottom: 18px;
+      margin-bottom: 24px;
+    }
+    .doc-header .org { font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: #888; }
+    .doc-header h1 { font-size: 24px; font-weight: 700; color: #143642; margin-top: 6px; }
+
+    .url-box {
+      background: #f0f4ff;
+      border: 1px solid #c7d8ff;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin: 16px 0 24px;
+      text-align: center;
+    }
+    .url-box a {
+      font-family: 'Courier New', monospace;
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a3a8a;
+      word-break: break-all;
+      text-decoration: none;
+    }
+    .url-box .hint { font-size: 12px; color: #555; margin-top: 6px; }
+
+    h2 {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: #143642;
+      margin: 26px 0 10px;
+      padding-bottom: 5px;
+      border-bottom: 1.5px solid #e0ddd5;
+    }
+
+    p { margin-bottom: 8px; color: #333; }
+    ol, ul { padding-left: 20px; margin-bottom: 8px; color: #333; }
+    li { margin-bottom: 6px; }
+
+    .pin-table { width: 100%; border-collapse: collapse; margin: 8px 0 4px; font-size: 14px; }
+    .pin-table th { background: #143642; color: #fff; text-align: left; padding: 8px 12px; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
+    .pin-table td { padding: 9px 12px; border-bottom: 1px solid #eee; }
+    .pin-table code { background: #eceae3; padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 14px; }
+
+    .feature-box {
+      background: #f0faf4;
+      border-left: 4px solid #2d9e5f;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 12px;
+    }
+    .feature-box .title { font-weight: 700; margin-bottom: 4px; color: #1a1a2e; }
+
+    .warn-box {
+      background: #fffbeb;
+      border-left: 4px solid #d38c11;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 16px 0;
+    }
+    .warn-box .title { font-weight: 700; color: #7a5200; margin-bottom: 4px; }
+
+    .doc-footer {
+      margin-top: 28px;
+      padding-top: 16px;
+      border-top: 1px solid #e0ddd5;
+      font-size: 11px;
+      color: #999;
+      text-align: center;
+    }
+
+    @media print {
+      body { background: #fff; padding: 0; }
+      .page { box-shadow: none; padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="doc-header">
+    <div class="org">Temple CRM — Live Test, Today</div>
+    <h1>Quick Start Guide</h1>
+  </div>
+
+  <p>Thank you for helping test the system today. It takes about two minutes to get started — no app to install, just a web browser.</p>
+
+  <div class="url-box">
+    <a href="https://temple-crm-web.onrender.com">temple-crm-web.onrender.com</a>
+    <div class="hint">Type this into your phone or laptop's browser. Works on WiFi or cellular data.</div>
+  </div>
+
+  <h2>Step 1 — Create Your Account (once)</h2>
+  <ol>
+    <li>Go to the link above, tap <strong>Sign Up</strong>.</li>
+    <li>Choose your account type: <strong>Admin</strong> or <strong>Super Admin</strong> (see below for which one you are).</li>
+    <li>Fill in your name, a username, email, phone number, and a password.</li>
+    <li>Enter the PIN for your account type (table below).</li>
+  </ol>
+
+  <table class="pin-table">
+    <thead><tr><th>Account Type</th><th>Signup PIN</th><th>Needed at Login?</th></tr></thead>
+    <tbody>
+      <tr><td>Admin</td><td><code>RR</code></td><td>No — just email &amp; password</td></tr>
+      <tr><td>Super Admin</td><td><code>2026</code></td><td><strong>Yes — every time</strong></td></tr>
+    </tbody>
+  </table>
+
+  <h2>Step 2 — Log In</h2>
+  <p>Same page every time — enter your email and password. If you're a <strong>Super Admin</strong>, also enter PIN <code>2026</code> in the "Super Admin PIN" box (Admins can leave that box blank).</p>
+
+  <div class="warn-box">
+    <div class="title">Heads up: 5 wrong attempts locks the account for 15 minutes</div>
+    <p>This is a real security feature we just added, not a bug. If you mistype your password, take it slow — you'll see a warning showing attempts remaining before it locks.</p>
+  </div>
+
+  <h2>What to Try — Everyone</h2>
+  <div class="feature-box">
+    <div class="title">Add Newcomer</div>
+    <p>Log a visitor's info: name, phone, WhatsApp interest, how they heard about us.</p>
+  </div>
+  <div class="feature-box">
+    <div class="title">Add Sponsor</div>
+    <p>Log a donation/sponsorship. Start typing a name — if that person is already in the system, a suggestion appears so you can autofill instead of retyping.</p>
+  </div>
+  <div class="feature-box">
+    <div class="title">My Data / Donation Form</div>
+    <p>"My Data" shows everything you've personally entered. "Donation Form" is the public page devotees would use to submit a donation themselves — check it looks right.</p>
+  </div>
+
+  <h2>What to Try — Admins Only</h2>
+  <p>Look for the <strong>Admin</strong> menu in the top navigation:</p>
+  <ul>
+    <li><strong>Reports</strong> — full newcomer &amp; sponsorship tables</li>
+    <li><strong>People</strong> — the master list of everyone, tagged Visitor/Donator/Member</li>
+    <li><strong>Home Program Outreach</strong> and <strong>Inventory</strong></li>
+  </ul>
+
+  <h2>What to Try — Super Admin Only</h2>
+  <p>Same Admin menu, with extra items only you can see:</p>
+  <ul>
+    <li><strong>Import Spreadsheet</strong> — bulk-upload a .xlsx of people</li>
+    <li><strong>Fact Sheet</strong> and <strong>Payment Settings</strong></li>
+    <li><strong>Security Log</strong> — a record of every login, logout, and change made today</li>
+  </ul>
+
+  <h2>If Something Looks Wrong</h2>
+  <p>Note what you were doing and what happened (a screenshot helps a lot), and let the organizer know. Don't worry about breaking anything — this is exactly what today is for.</p>
+
+  <div class="doc-footer">Temple CRM — Live Test Guide</div>
+
+</div>
+</body>
+</html>

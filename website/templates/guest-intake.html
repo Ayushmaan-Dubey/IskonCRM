@@ -92,6 +92,26 @@
   </div>
 
   <div class="form-section">
+    <div class="form-row">
+      <div class="form-group col-md-6">
+        <label>Interested in volunteering for the temple?</label>
+        <select name="interested_in_volunteering" id="volunteerSelect" class="form-control">
+          <option value="no" {% if not form or form.get('interested_in_volunteering') != 'yes' %}selected{% endif %}>No</option>
+          <option value="yes" {% if form and form.get('interested_in_volunteering') == 'yes' %}selected{% endif %}>Yes</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row" id="janmashtamiRow" style="display:none;">
+      <div class="form-group col-md-10 mb-0">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="janmashtami_setup_help" id="janmashtamiCheck" value="yes" {% if form and form.get('janmashtami_setup_help') == 'yes' %}checked{% endif %}>
+          <label class="form-check-label" for="janmashtamiCheck">Would you be willing to help with setup for the upcoming Janmashtami celebration?</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
     <div class="form-group mb-0">
       <label>General Notes / Comments</label>
       <textarea name="notes" class="form-control" rows="4">{{ form.notes if form else '' }}</textarea>
@@ -103,4 +123,14 @@
     <button type="submit" name="submit_action" value="save_add_another" class="btn btn-outline-dark">Save &amp; Add Another</button>
   </div>
 </form>
+
+<script>
+(function () {
+  var sel = document.getElementById('volunteerSelect');
+  var row = document.getElementById('janmashtamiRow');
+  function sync() { row.style.display = sel.value === 'yes' ? '' : 'none'; }
+  sel.addEventListener('change', sync);
+  sync();
+})();
+</script>
 {% endblock %}

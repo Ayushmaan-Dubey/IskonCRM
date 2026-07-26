@@ -9,7 +9,8 @@ from sqlalchemy import desc
 
 from . import db
 from .audit import log_event
-from .models import GuestIntake, Sponsorship, Person, FactSheet, PaymentSettings
+from .utils import format_phone
+from .models import GuestIntake, Sponsorship, Person, FactSheet, PaymentSettings, PendingNewcomer
 
 views = Blueprint('views', __name__)
 
@@ -89,6 +90,37 @@ def _find_or_create_person(full_name, email, phone_number, created_by_user_id=No
     return person
 
 
+def _create_guest_intake_record(full_name, phone_number, email, notes, first_time_at_temple,
+                                 whatsapp_status, referral_sources, referral_other,
+                                 residence_areas, residence_other, interested_in_volunteering,
+                                 janmashtami_setup_help, created_by_user_id):
+    """Creates a GuestIntake row and merges it into the unified Person record (visitor tag).
+    Shared by the internal staff form and the public-form approval flow."""
+    record = GuestIntake(
+        full_name=full_name,
+        phone_number=phone_number or None,
+        email=email or None,
+        notes=notes or None,
+        first_time_at_temple=first_time_at_temple,
+        whatsapp_status=whatsapp_status or None,
+        referral_sources=', '.join(referral_sources) if referral_sources else None,
+        referral_other=referral_other or None,
+        residence_areas=', '.join(residence_areas) if residence_areas else None,
+        residence_other=residence_other or None,
+        interested_in_volunteering=interested_in_volunteering,
+        janmashtami_setup_help=janmashtami_setup_help,
+        created_by_user_id=created_by_user_id,
+    )
+    db.session.add(record)
+    db.session.flush()
+
+    person = _find_or_create_person(full_name, email or None, phone_number or None, created_by_user_id)
+    person.add_tag('visitor')
+    record.person_id = person.id
+    db.session.commit()
+    return record
+
+
 def _duplicate_guest_record(full_name, phone_number, email, first_time_value, whatsapp_status,
                              referral_sources, referral_other, residence_areas, residence_other, notes):
     return GuestIntake.query.filter(
@@ -150,7 +182,7 @@ def guest_intake():
     if request.method == 'POST':
         form = request.form
         full_name = form.get('full_name', '').strip()
-        phone_number = form.get('phone_number', '').strip()
+        phone_number = format_phone(form.get('phone_number', '').strip())
         email = form.get('email', '').strip()
         notes = form.get('notes', '').strip()
         first_time_value = form.get('first_time_at_temple', 'no')
@@ -159,6 +191,8 @@ def guest_intake():
         referral_other = form.get('referral_other', '').strip()
         residence_areas = form.getlist('residence_areas')
         residence_other = form.get('residence_other', '').strip()
+        interested_in_volunteering = form.get('interested_in_volunteering') == 'yes'
+        janmashtami_setup_help = interested_in_volunteering and form.get('janmashtami_setup_help') == 'yes'
 
         errors = []
         if not full_name:
@@ -185,27 +219,11 @@ def guest_intake():
                 return redirect(url_for('views.guest_intake'))
             return redirect(url_for('views.my_data'))
 
-        record = GuestIntake(
-            full_name=full_name,
-            phone_number=phone_number or None,
-            email=email or None,
-            notes=notes or None,
-            first_time_at_temple=(first_time_value == 'yes'),
-            whatsapp_status=whatsapp_status,
-            referral_sources=', '.join(referral_sources) if referral_sources else None,
-            referral_other=referral_other or None,
-            residence_areas=', '.join(residence_areas) if residence_areas else None,
-            residence_other=residence_other or None,
-            created_by_user_id=current_user.id,
+        _create_guest_intake_record(
+            full_name, phone_number, email, notes, (first_time_value == 'yes'),
+            whatsapp_status, referral_sources, referral_other, residence_areas, residence_other,
+            interested_in_volunteering, janmashtami_setup_help, current_user.id,
         )
-        db.session.add(record)
-        db.session.flush()
-
-        # Create/update unified Person record with visitor tag
-        person = _find_or_create_person(full_name, email or None, phone_number or None, current_user.id)
-        person.add_tag('visitor')
-        record.person_id = person.id
-        db.session.commit()
 
         flash('Guest intake saved successfully.', 'success')
         if form.get('submit_action') == 'save_add_another':
@@ -218,6 +236,86 @@ def guest_intake():
         area_options=AREA_OPTIONS,
         whatsapp_options=WHATSAPP_OPTIONS,
     )
+
+
+# ─────────────────────────────────────────────────────────────
+# Public Newcomer Signup Form — pending admin approval
+# ─────────────────────────────────────────────────────────────
+
+@views.route('/newcomer-signup', methods=['GET', 'POST'])
+def newcomer_signup():
+    if request.method == 'POST':
+        form = request.form
+        full_name = form.get('full_name', '').strip()
+        phone_number = format_phone(form.get('phone_number', '').strip())
+        email = form.get('email', '').strip()
+        notes = form.get('notes', '').strip()
+        first_time_value = form.get('first_time_at_temple', 'no')
+        whatsapp_status = form.get('whatsapp_status', '').strip()
+        referral_sources = form.getlist('referral_sources')
+        referral_other = form.get('referral_other', '').strip()
+        residence_areas = form.getlist('residence_areas')
+        residence_other = form.get('residence_other', '').strip()
+        interested_in_volunteering = form.get('interested_in_volunteering') == 'yes'
+        janmashtami_setup_help = interested_in_volunteering and form.get('janmashtami_setup_help') == 'yes'
+
+        errors = []
+        if not full_name:
+            errors.append('Full name is required.')
+        if not phone_number:
+            errors.append('Phone number is required.')
+        if not whatsapp_status:
+            errors.append('Please select your WhatsApp interest.')
+
+        if errors:
+            return render_template(
+                'newcomer-signup.html', errors=errors, form=form,
+                referral_options=REFERRAL_OPTIONS, area_options=AREA_OPTIONS,
+                whatsapp_options=WHATSAPP_OPTIONS,
+            )
+
+        pending = PendingNewcomer(
+            full_name=full_name,
+            phone_number=phone_number or None,
+            email=email or None,
+            notes=notes or None,
+            first_time_at_temple=(first_time_value == 'yes'),
+            whatsapp_status=whatsapp_status,
+            referral_sources=', '.join(referral_sources) if referral_sources else None,
+            referral_other=referral_other or None,
+            residence_areas=', '.join(residence_areas) if residence_areas else None,
+            residence_other=residence_other or None,
+            interested_in_volunteering=interested_in_volunteering,
+            janmashtami_setup_help=janmashtami_setup_help,
+        )
+        db.session.add(pending)
+        db.session.commit()
+
+        return render_template('newcomer-signup.html', success=True)
+
+    return render_template(
+        'newcomer-signup.html',
+        referral_options=REFERRAL_OPTIONS,
+        area_options=AREA_OPTIONS,
+        whatsapp_options=WHATSAPP_OPTIONS,
+    )
+
+
+@views.route('/newcomer-signup/qr.png')
+def newcomer_signup_qr():
+    try:
+        import qrcode
+        form_url = request.host_url.rstrip('/') + url_for('views.newcomer_signup')
+        qr = qrcode.QRCode(version=1, box_size=10, border=4)
+        qr.add_data(form_url)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color='#143642', back_color='white')
+        buf = io.BytesIO()
+        img.save(buf, format='PNG')
+        buf.seek(0)
+        return Response(buf.read(), mimetype='image/png')
+    except ImportError:
+        return Response('qrcode library not installed', status=500)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -265,6 +363,7 @@ def sponsorship():
                 payment_options=PAYMENT_OPTIONS,
             )
 
+        sponsor_phone_number = format_phone(sponsor_phone_number)
         not_yet_paid = (payment_method == 'Not Yet Paid')
 
         record = Sponsorship(
@@ -455,6 +554,7 @@ def export_report_xlsx(report_name):
         headers = [
             'Full Name', 'Phone', 'Email', 'First Time', 'WhatsApp',
             'Referral Sources', 'Referral Other', 'Residence Areas', 'Residence Other',
+            'Interested in Volunteering', 'Janmashtami Setup Help',
             'Notes', 'Recorded By', 'Created At',
         ]
         ws.append(headers)
@@ -469,6 +569,8 @@ def export_report_xlsx(report_name):
                 record.referral_other or '',
                 record.residence_areas or '',
                 record.residence_other or '',
+                'Yes' if record.interested_in_volunteering else 'No',
+                'Yes' if record.janmashtami_setup_help else 'No',
                 record.notes or '',
                 record.created_by_user.display_name if record.created_by_user else '',
                 record.created_at.strftime('%Y-%m-%d %H:%M'),
@@ -562,7 +664,7 @@ def donate():
         form = request.form
         full_name = form.get('full_name', '').strip()
         email = form.get('email', '').strip()
-        phone_number = form.get('phone_number', '').strip()
+        phone_number = format_phone(form.get('phone_number', '').strip())
         sponsorship_cats = form.getlist('sponsorship_categories')
         payment_method = form.get('payment_method', '').strip()
         donation_amount = form.get('donation_amount', '').strip()

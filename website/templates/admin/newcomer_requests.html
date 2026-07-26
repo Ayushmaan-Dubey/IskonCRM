@@ -1,0 +1,68 @@
+{% extends 'base.HTML' %}
+{% block title %}Newcomer Requests — Admin{% endblock %}
+{% block content %}
+<span class="section-kicker">Admin · Public Signups</span>
+<h1 class="mt-2 mb-1">Newcomer Requests</h1>
+<p class="muted">People who submitted themselves through the public form below, waiting for an admin to approve or reject before they're added to the database.</p>
+
+<div class="table-card mb-4">
+  <h6 class="font-weight-bold mb-2">Public Signup Form</h6>
+  <p class="muted small mb-2">Share this link or QR code with newcomers so they can add themselves — every submission lands here first for review.</p>
+  <div class="d-flex flex-column flex-md-row align-items-md-center">
+    <input type="text" class="form-control mr-md-2 mb-2 mb-md-0" readonly
+           value="{{ request.host_url.rstrip('/') }}{{ url_for('views.newcomer_signup') }}"
+           onclick="this.select();">
+    <a href="{{ url_for('views.newcomer_signup') }}" target="_blank" class="btn btn-outline-dark btn-sm mr-2">Open Form</a>
+    <img src="{{ url_for('views.newcomer_signup_qr') }}" alt="QR Code" style="width:64px;">
+  </div>
+</div>
+
+<div class="table-card">
+  {% if pending %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Contact</th>
+            <th>First Time</th>
+            <th>WhatsApp</th>
+            <th>Volunteering</th>
+            <th>Submitted</th>
+            <th style="width:180px;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for req in pending %}
+            <tr>
+              <td><strong>{{ req.full_name }}</strong>{% if req.notes %}<div class="small text-muted">{{ req.notes }}</div>{% endif %}</td>
+              <td>
+                {% if req.phone_number %}<div class="small">{{ req.phone_number }}</div>{% endif %}
+                {% if req.email %}<div class="small text-muted">{{ req.email }}</div>{% endif %}
+              </td>
+              <td>{{ 'Yes' if req.first_time_at_temple else 'No' }}</td>
+              <td class="small">{{ req.whatsapp_status or 'N/A' }}</td>
+              <td class="small">
+                {{ 'Yes' if req.interested_in_volunteering else 'No' }}
+                {% if req.janmashtami_setup_help %}<span class="badge badge-warning ml-1">Janmashtami</span>{% endif %}
+              </td>
+              <td class="small text-muted">{{ req.submitted_at.strftime('%Y-%m-%d %H:%M') }}</td>
+              <td>
+                <form method="post" action="{{ url_for('admin.admin_newcomer_request_approve', request_id=req.id) }}" class="d-inline">
+                  <button class="btn btn-xs btn-success mr-1">Approve</button>
+                </form>
+                <form method="post" action="{{ url_for('admin.admin_newcomer_request_reject', request_id=req.id) }}" class="d-inline"
+                      onsubmit="return confirm('Reject and permanently remove this request?');">
+                  <button class="btn btn-xs btn-outline-danger">Reject</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-center text-muted py-4 mb-0">No pending requests — you're all caught up.</p>
+  {% endif %}
+</div>
+{% endblock %}

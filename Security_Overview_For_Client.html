@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Temple CRM — Security Overview</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.75;
+      color: #1a1a2e;
+      background: #f8f8f6;
+      padding: 40px 20px;
+    }
+
+    .page {
+      max-width: 840px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.08);
+      padding: 56px 64px;
+    }
+
+    .doc-header {
+      border-bottom: 3px solid #143642;
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+    }
+
+    .doc-header .org { font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: #888; }
+    .doc-header h1 { font-size: 28px; font-weight: 700; color: #143642; margin-top: 8px; }
+    .doc-header .meta { font-size: 12px; color: #888; margin-top: 10px; }
+    .doc-header .meta span { margin-right: 24px; }
+
+    h2 {
+      font-size: 16px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #143642;
+      margin: 36px 0 16px;
+      padding-bottom: 6px;
+      border-bottom: 1.5px solid #e0ddd5;
+    }
+
+    p { margin-bottom: 10px; color: #333; }
+
+    .lead {
+      font-size: 15px;
+      color: #333;
+      background: #f5f7ff;
+      border: 1px solid #c7d8ff;
+      border-radius: 8px;
+      padding: 18px 20px;
+      margin-bottom: 8px;
+    }
+
+    .feature-block {
+      margin-bottom: 22px;
+      padding: 20px 22px;
+      border-radius: 8px;
+      border-left: 4px solid #2d9e5f;
+      background: #f0faf4;
+    }
+
+    .feature-block .tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-bottom: 8px;
+      background: #2d9e5f;
+      color: #fff;
+    }
+
+    .feature-block .title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 10px;
+    }
+
+    .feature-block h4 {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: #143642;
+      margin: 14px 0 4px;
+    }
+
+    .feature-block h4:first-of-type { margin-top: 4px; }
+
+    .summary-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+    .summary-table th { background: #143642; color: #fff; text-align: left; padding: 10px 14px; font-size: 11px; letter-spacing: .05em; text-transform: uppercase; }
+    .summary-table td { padding: 10px 14px; border-bottom: 1px solid #eee; vertical-align: top; }
+    .summary-table tr:last-child td { border-bottom: none; }
+    .summary-table tr:nth-child(even) td { background: #fafaf8; }
+
+    .pill {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: #d4edda;
+      color: #1a6b38;
+    }
+
+    .analogy {
+      margin-top: 10px;
+      padding: 10px 14px;
+      background: #fffef5;
+      border: 1px dashed #e0c96b;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #5c4a00;
+    }
+    .analogy strong { color: #7a5200; }
+
+    .doc-footer {
+      margin-top: 48px;
+      padding-top: 20px;
+      border-top: 1px solid #e0ddd5;
+      font-size: 11.5px;
+      color: #999;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    @media print {
+      body { background: #fff; padding: 0; }
+      .page { box-shadow: none; border-radius: 0; padding: 40px 48px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="doc-header">
+    <div class="org">Temple CRM — Client Briefing</div>
+    <h1>Security Enhancements Overview</h1>
+    <div class="meta">
+      <span><strong>System:</strong> temple-crm-web.onrender.com</span>
+      <span><strong>Status:</strong> All items below are live and active today</span>
+    </div>
+  </div>
+
+  <p class="lead">
+    We've added three protections to the temple's system this update. None of them change how staff use the
+    app day to day — no new steps, no extra clicks for normal work. They run quietly in the background and
+    exist to protect the personal information of your donors, members, and newcomers, and to give you clear
+    answers if you ever need to know "who did what, and when."
+  </p>
+
+  <h2>At a Glance</h2>
+  <table class="summary-table">
+    <thead>
+      <tr>
+        <th style="width:26%">Protection</th>
+        <th style="width:44%">What It Protects Against</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Activity Log</td>
+        <td>Disputes or confusion over who made a change and when</td>
+        <td><span class="pill">Active</span></td>
+      </tr>
+      <tr>
+        <td>Login Protection</td>
+        <td>Someone repeatedly guessing a staff member's password</td>
+        <td><span class="pill">Active</span></td>
+      </tr>
+      <tr>
+        <td>Secure Connection &amp; Browser Safety Rules</td>
+        <td>Data being intercepted, or the site being disguised/embedded elsewhere</td>
+        <td><span class="pill">Active</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>1. Activity Log</h2>
+  <div class="feature-block">
+    <span class="tag">Active</span>
+    <div class="title">A permanent record of every important action taken in the system</div>
+
+    <h4>What it does</h4>
+    <p>
+      The system now automatically keeps a written record every time something important happens: someone
+      logging in or out, a failed login attempt, a record being deleted, or a staff member's access level
+      being changed. Each entry notes exactly who did it and exactly when.
+    </p>
+
+    <h4>Why it matters to you</h4>
+    <p>
+      If a donation record or a newcomer entry is ever accidentally deleted, or if a question ever comes up
+      about who changed something, you have a clear, factual answer instead of relying on memory or guesswork.
+      This is the same kind of accountability that banks and other organizations handling sensitive information
+      are expected to maintain, and it protects your staff too — an honest volunteer can never be wrongly blamed
+      for something the record shows they didn't do.
+    </p>
+
+    <h4>Who can see it</h4>
+    <p>
+      This log is only visible to your most senior administrator (Super Admin) — it's oversight information,
+      not something regular staff need to see or manage.
+    </p>
+  </div>
+
+  <h2>2. Login Protection</h2>
+  <div class="feature-block">
+    <span class="tag">Active</span>
+    <div class="title">Automatically blocks repeated password-guessing attempts</div>
+
+    <h4>What it does</h4>
+    <p>
+      If someone types the wrong password for an account five times in a row, that account is temporarily
+      locked for 15 minutes. A staff member who simply mistypes their password once or twice is unaffected —
+      they'll just see a friendly reminder of how many tries they have left.
+    </p>
+
+    <h4>Why it matters to you</h4>
+    <p>
+      This is one of the most common ways an online account gets broken into: a bad actor tries password after
+      password until one works. That path is now closed. It requires no action from your staff — it simply
+      activates on its own the moment repeated wrong attempts happen, and every lockout is written into the
+      Activity Log above.
+    </p>
+
+    <div class="analogy">
+      <strong>Think of it like:</strong> a door that automatically bolts itself for a short time after several
+      wrong key attempts, instead of letting someone keep trying keys all night.
+    </div>
+  </div>
+
+  <h2>3. Secure Connection &amp; Browser Safety Rules</h2>
+  <div class="feature-block">
+    <span class="tag">Active</span>
+    <div class="title">Every visit to the site is now encrypted, with extra safety rules enforced automatically</div>
+
+    <h4>What it does</h4>
+    <p>
+      Two things happen automatically for every visitor now. First, the connection between a visitor's device
+      and the temple's system is always encrypted (the padlock/HTTPS you see in a browser's address bar), and
+      the system now insists on this — it will not allow an unprotected connection. Second, the system sends
+      a set of instructions that every web browser understands and automatically follows, telling it things
+      like "never let another website disguise itself as this one" and "never let this page be secretly
+      embedded inside another site."
+    </p>
+
+    <h4>Why it matters to you</h4>
+    <p>
+      This closes off several well-known tricks used to intercept information in transit or fool a visitor
+      into interacting with a fake or hidden version of the page. It's the same baseline of protection used by
+      professional websites that handle payments and personal information, and — like the other two — it's
+      already active and requires nothing further from you or your staff.
+    </p>
+  </div>
+
+  <h2>Summary</h2>
+  <p>
+    All three protections are live on the system today, verified working, and require no ongoing effort from
+    the temple's staff. Together, they give you three things: a clear record of who did what, protection
+    against someone trying to break into a staff account, and a secure, tamper-resistant connection for every
+    visitor. This is a meaningful step toward handling your donors' and members' information with the same
+    level of care they'd expect from any organization they trust with their personal details.
+  </p>
+
+  <div class="doc-footer">
+    <span>Temple CRM — Security Enhancements Overview</span>
+    <span>Prepared for client review</span>
+  </div>
+
+</div>
+</body>
+</html>

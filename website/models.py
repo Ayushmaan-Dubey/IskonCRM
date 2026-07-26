@@ -69,9 +69,29 @@ class GuestIntake(db.Model):
     referral_other = db.Column(db.String(200), nullable=True)
     residence_areas = db.Column(db.String(500), nullable=True)
     residence_other = db.Column(db.String(200), nullable=True)
+    interested_in_volunteering = db.Column(db.Boolean, default=False, nullable=False)
+    janmashtami_setup_help = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), default=func.now(), nullable=False)
     created_by_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     person_id = db.Column(db.Integer, db.ForeignKey('person.id'), nullable=True)
+
+
+class PendingNewcomer(db.Model):
+    """A newcomer self-submitted via the public form, awaiting admin approval."""
+    id = db.Column(db.Integer, primary_key=True)
+    full_name = db.Column(db.String(200), nullable=False)
+    phone_number = db.Column(db.String(50), nullable=True)
+    email = db.Column(db.String(150), nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    first_time_at_temple = db.Column(db.Boolean, default=False, nullable=False)
+    whatsapp_status = db.Column(db.String(50), nullable=True)
+    referral_sources = db.Column(db.String(500), nullable=True)
+    referral_other = db.Column(db.String(200), nullable=True)
+    residence_areas = db.Column(db.String(500), nullable=True)
+    residence_other = db.Column(db.String(200), nullable=True)
+    interested_in_volunteering = db.Column(db.Boolean, default=False, nullable=False)
+    janmashtami_setup_help = db.Column(db.Boolean, default=False, nullable=False)
+    submitted_at = db.Column(db.DateTime(timezone=True), default=func.now(), nullable=False)
 
 
 class Sponsorship(db.Model):

@@ -99,6 +99,11 @@
             <dd class="col-sm-8">{{ item.referral_sources or item.referral_other or 'N/A' }}</dd>
             <dt class="col-sm-4">Residence</dt>
             <dd class="col-sm-8">{{ item.residence_areas or item.residence_other or 'N/A' }}</dd>
+            <dt class="col-sm-4">Volunteering</dt>
+            <dd class="col-sm-8">
+              {{ 'Yes' if item.interested_in_volunteering else 'No' }}
+              {% if item.janmashtami_setup_help %}<span class="badge badge-warning ml-1">Janmashtami setup</span>{% endif %}
+            </dd>
             <dt class="col-sm-4">Notes</dt>
             <dd class="col-sm-8">{{ item.notes or 'N/A' }}</dd>
             <dt class="col-sm-4">Created</dt>

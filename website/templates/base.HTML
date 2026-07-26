@@ -191,10 +191,17 @@
               <li class="nav-item"><a class="nav-link" href="{{ url_for('views.donate') }}">Donation Form</a></li>
               {% if current_user.is_admin %}
                 <li class="nav-item dropdown">
-                  <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-toggle="dropdown">Admin</a>
+                  <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-toggle="dropdown">
+                    Admin
+                    {% if pending_newcomer_count %}<span class="badge badge-danger ml-1">{{ pending_newcomer_count }}</span>{% endif %}
+                  </a>
                   <div class="dropdown-menu dropdown-menu-right">
                     <a class="dropdown-item" href="{{ url_for('views.reports') }}">Reports</a>
                     <a class="dropdown-item" href="{{ url_for('admin.admin_people') }}">People</a>
+                    <a class="dropdown-item" href="{{ url_for('admin.admin_newcomer_requests') }}">
+                      Newcomer Requests
+                      {% if pending_newcomer_count %}<span class="badge badge-danger ml-1">{{ pending_newcomer_count }}</span>{% endif %}
+                    </a>
                     <a class="dropdown-item" href="{{ url_for('admin.admin_hpo') }}">Home Program Outreach</a>
                     <a class="dropdown-item" href="{{ url_for('admin.admin_inventory') }}">Inventory</a>
                     <a class="dropdown-item" href="{{ url_for('admin.admin_broadcast') }}">Broadcast</a>

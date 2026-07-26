@@ -189,14 +189,17 @@ def create_app():
             # ── GuestIntake table migrations ────────────────────────────────
             if 'guest_intake' in existing_tables:
                 cols = [c['name'] for c in inspector.get_columns('guest_intake')]
-                if 'person_id' not in cols:
-                    try:
-                        db.session.execute(text(
-                            'ALTER TABLE guest_intake ADD COLUMN person_id INTEGER REFERENCES person(id)'
-                        ))
-                        db.session.commit()
-                    except Exception:
-                        db.session.rollback()
+                for col, ddl in [
+                    ('person_id',                 'ALTER TABLE guest_intake ADD COLUMN person_id INTEGER REFERENCES person(id)'),
+                    ('interested_in_volunteering', 'ALTER TABLE guest_intake ADD COLUMN interested_in_volunteering BOOLEAN DEFAULT FALSE'),
+                    ('janmashtami_setup_help',     'ALTER TABLE guest_intake ADD COLUMN janmashtami_setup_help BOOLEAN DEFAULT FALSE'),
+                ]:
+                    if col not in cols:
+                        try:
+                            db.session.execute(text(ddl))
+                            db.session.commit()
+                        except Exception:
+                            db.session.rollback()
 
             # ── Create all new tables ───────────────────────────────────────
             db.create_all()
@@ -217,6 +220,9 @@ def create_app():
             # ── Migrate existing Sponsorships → Person (donator tag) ────────
             _migrate_sponsorships_to_persons()
 
+            # ── Normalize existing phone numbers to (xxx)-xxx-xxxx ──────────
+            _backfill_phone_formats()
+
     from .views import views
     from .auth import auth
     from .admin import admin
@@ -227,6 +233,14 @@ def create_app():
 
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
+
+    @app.context_processor
+    def inject_pending_newcomer_count():
+        from flask_login import current_user
+        if db is None or not current_user.is_authenticated or not getattr(current_user, 'is_admin', False):
+            return {'pending_newcomer_count': 0}
+        from .models import PendingNewcomer
+        return {'pending_newcomer_count': PendingNewcomer.query.count()}
 
     return app
 
@@ -263,6 +277,30 @@ def _migrate_sponsorships_to_persons():
             )
             person.add_tag('donator')
             sp.person_id = person.id
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+
+def _backfill_phone_formats():
+    """One-time (and safe to re-run) normalization of existing phone numbers to (xxx)-xxx-xxxx."""
+    if db is None:
+        return
+    try:
+        from .models import User, GuestIntake, PendingNewcomer, Sponsorship, Person
+        from .utils import format_phone
+        for model, field in [
+            (User, 'phone_number'),
+            (GuestIntake, 'phone_number'),
+            (PendingNewcomer, 'phone_number'),
+            (Sponsorship, 'sponsor_phone_number'),
+            (Person, 'phone_number'),
+        ]:
+            for row in model.query.filter(getattr(model, field).isnot(None)).all():
+                current = getattr(row, field)
+                formatted = format_phone(current)
+                if formatted != current:
+                    setattr(row, field, formatted)
         db.session.commit()
     except Exception:
         db.session.rollback()
