@@ -1,11 +1,11 @@
 {% extends 'base.HTML' %}
 
-{% block title %}Guest Intake{% endblock %}
+{% block title %}Add Newcomers{% endblock %}
 
 {% block content %}
 <span class="section-kicker">Module 1</span>
-<h1 class="mt-2">Guest Intake</h1>
-<p class="muted">Capture newcomer details, first-time status, referral source, residence, and WhatsApp preference.</p>
+<h1 class="mt-2">Add Newcomers</h1>
+<p class="muted">Just a name and phone number for each person — add as many as you met at once. You (or another admin) can fill in the rest of their details later from the <a href="{{ url_for('views.needs_followup') }}">Needs Follow-Up</a> list.</p>
 
 {% if errors %}
   <div class="alert alert-danger">
@@ -18,119 +18,71 @@
 {% endif %}
 
 <form method="post" class="mt-4" data-prevent-double-submit>
-  <div class="form-section">
-    <div class="form-row">
-      <div class="form-group col-md-4">
-        <label>Full Name <span class="text-danger">*</span></label>
-        <input type="text" name="full_name" class="form-control" value="{{ form.full_name if form else '' }}" required>
-      </div>
-      <div class="form-group col-md-4">
-        <label>Phone Number <span class="text-danger">*</span></label>
-        <input type="text" name="phone_number" class="form-control" value="{{ form.phone_number if form else '' }}" required>
-      </div>
-      <div class="form-group col-md-4">
-        <label>Email</label>
-        <input type="email" name="email" class="form-control" value="{{ form.email if form else '' }}">
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group col-md-6">
-        <label>First time at temple?</label>
-        <select name="first_time_at_temple" class="form-control">
-          <option value="yes" {% if form and form.get('first_time_at_temple') == 'yes' %}selected{% endif %}>Yes</option>
-          <option value="no" {% if not form or form.get('first_time_at_temple') == 'no' %}selected{% endif %}>No</option>
-        </select>
-      </div>
-      <div class="form-group col-md-6">
-        <label>Interested in joining Temple WhatsApp? <span class="text-danger">*</span></label>
-        <select name="whatsapp_status" class="form-control" required>
-          <option value="">-- Select --</option>
-          {% for option in whatsapp_options %}
-            <option value="{{ option }}" {% if form and form.get('whatsapp_status') == option %}selected{% endif %}>{{ option }}</option>
-          {% endfor %}
-        </select>
-      </div>
-    </div>
-  </div>
-
-  <div class="form-section">
-    <h5>How did they hear about us?</h5>
-    <div class="form-row">
-      {% set selected_referrals = form.getlist('referral_sources') if form else [] %}
-      {% for option in referral_options %}
-        <div class="form-group col-md-4 mb-2">
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="referral_sources" value="{{ option }}" id="referral_{{ loop.index }}" {% if option in selected_referrals %}checked{% endif %}>
-            <label class="form-check-label" for="referral_{{ loop.index }}">{{ option }}</label>
+  <div class="table-card mb-3">
+    <div id="quickAddRows">
+      {% set names = form.getlist('full_name') if form else ['', ''] %}
+      {% set phones = form.getlist('phone_number') if form else ['', ''] %}
+      {% for i in range(names|length if form else 2) %}
+        <div class="form-row quick-add-row align-items-end mb-2">
+          <div class="form-group col-md-5 mb-1">
+            {% if loop.first %}<label class="small font-weight-bold">Full Name</label>{% endif %}
+            <input type="text" name="full_name" class="form-control" placeholder="Full Name" value="{{ names[i] if form else '' }}">
+          </div>
+          <div class="form-group col-md-5 mb-1">
+            {% if loop.first %}<label class="small font-weight-bold">Phone Number</label>{% endif %}
+            <input type="text" name="phone_number" class="form-control" placeholder="Phone Number" value="{{ phones[i] if form else '' }}">
+          </div>
+          <div class="form-group col-md-2 mb-1">
+            <button type="button" class="btn btn-outline-danger btn-sm btn-block remove-row" {% if loop.length <= 1 %}style="visibility:hidden;"{% endif %}>Remove</button>
           </div>
         </div>
       {% endfor %}
     </div>
-    <div class="form-group mb-0">
-      <label>Other referral details</label>
-      <input type="text" name="referral_other" class="form-control" value="{{ form.referral_other if form else '' }}">
-    </div>
+    <button type="button" id="addRowBtn" class="btn btn-outline-dark btn-sm mt-2">+ Add Another Person</button>
   </div>
 
-  <div class="form-section">
-    <h5>Where do they reside?</h5>
-    <div class="form-row">
-      {% set selected_areas = form.getlist('residence_areas') if form else [] %}
-      {% for option in area_options %}
-        <div class="form-group col-md-4 mb-2">
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="residence_areas" value="{{ option }}" id="area_{{ loop.index }}" {% if option in selected_areas %}checked{% endif %}>
-            <label class="form-check-label" for="area_{{ loop.index }}">{{ option }}</label>
-          </div>
-        </div>
-      {% endfor %}
-    </div>
-    <div class="form-group mb-0">
-      <label>Other residence details</label>
-      <input type="text" name="residence_other" class="form-control" value="{{ form.residence_other if form else '' }}">
-    </div>
-  </div>
-
-  <div class="form-section">
-    <div class="form-row">
-      <div class="form-group col-md-6">
-        <label>Interested in volunteering for the temple?</label>
-        <select name="interested_in_volunteering" id="volunteerSelect" class="form-control">
-          <option value="no" {% if not form or form.get('interested_in_volunteering') != 'yes' %}selected{% endif %}>No</option>
-          <option value="yes" {% if form and form.get('interested_in_volunteering') == 'yes' %}selected{% endif %}>Yes</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-row" id="janmashtamiRow" style="display:none;">
-      <div class="form-group col-md-10 mb-0">
-        <div class="form-check">
-          <input class="form-check-input" type="checkbox" name="janmashtami_setup_help" id="janmashtamiCheck" value="yes" {% if form and form.get('janmashtami_setup_help') == 'yes' %}checked{% endif %}>
-          <label class="form-check-label" for="janmashtamiCheck">Would you be willing to help with setup for the upcoming Janmashtami celebration?</label>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="form-section">
-    <div class="form-group mb-0">
-      <label>General Notes / Comments</label>
-      <textarea name="notes" class="form-control" rows="4">{{ form.notes if form else '' }}</textarea>
-    </div>
-  </div>
-
-  <div class="d-flex flex-column flex-md-row">
-    <button type="submit" name="submit_action" value="save" class="btn btn-dark mr-md-2 mb-2 mb-md-0">Save</button>
-    <button type="submit" name="submit_action" value="save_add_another" class="btn btn-outline-dark">Save &amp; Add Another</button>
-  </div>
+  <button type="submit" class="btn btn-dark">Save</button>
 </form>
+
+<template id="rowTemplate">
+  <div class="form-row quick-add-row align-items-end mb-2">
+    <div class="form-group col-md-5 mb-1">
+      <input type="text" name="full_name" class="form-control" placeholder="Full Name">
+    </div>
+    <div class="form-group col-md-5 mb-1">
+      <input type="text" name="phone_number" class="form-control" placeholder="Phone Number">
+    </div>
+    <div class="form-group col-md-2 mb-1">
+      <button type="button" class="btn btn-outline-danger btn-sm btn-block remove-row">Remove</button>
+    </div>
+  </div>
+</template>
 
 <script>
 (function () {
-  var sel = document.getElementById('volunteerSelect');
-  var row = document.getElementById('janmashtamiRow');
-  function sync() { row.style.display = sel.value === 'yes' ? '' : 'none'; }
-  sel.addEventListener('change', sync);
-  sync();
+  var rows = document.getElementById('quickAddRows');
+  var template = document.getElementById('rowTemplate');
+  var addBtn = document.getElementById('addRowBtn');
+
+  function updateRemoveVisibility() {
+    var removeButtons = rows.querySelectorAll('.remove-row');
+    removeButtons.forEach(function (btn) {
+      btn.style.visibility = removeButtons.length > 1 ? 'visible' : 'hidden';
+    });
+  }
+
+  addBtn.addEventListener('click', function () {
+    var clone = template.content.cloneNode(true);
+    rows.appendChild(clone);
+    updateRemoveVisibility();
+  });
+
+  rows.addEventListener('click', function (e) {
+    if (e.target.classList.contains('remove-row')) {
+      e.target.closest('.quick-add-row').remove();
+      updateRemoveVisibility();
+    }
+  });
 })();
 </script>
 {% endblock %}
