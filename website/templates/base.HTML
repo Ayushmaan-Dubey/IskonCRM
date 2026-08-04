@@ -186,14 +186,6 @@
             {% if current_user.is_authenticated %}
               <li class="nav-item"><a class="nav-link" href="{{ url_for('views.home') }}">Dashboard</a></li>
               <li class="nav-item"><a class="nav-link" href="{{ url_for('views.guest_intake') }}">Add Newcomer</a></li>
-              {% if current_user.is_admin %}
-                <li class="nav-item">
-                  <a class="nav-link" href="{{ url_for('views.needs_followup') }}">
-                    Needs Follow-Up
-                    {% if needs_followup_count %}<span class="badge badge-warning ml-1">{{ needs_followup_count }}</span>{% endif %}
-                  </a>
-                </li>
-              {% endif %}
               <li class="nav-item"><a class="nav-link" href="{{ url_for('views.sponsorship') }}">Add Sponsor</a></li>
               <li class="nav-item"><a class="nav-link" href="{{ url_for('views.my_data') }}">My Data</a></li>
               <li class="nav-item"><a class="nav-link" href="{{ url_for('views.donate') }}">Donation Form</a></li>

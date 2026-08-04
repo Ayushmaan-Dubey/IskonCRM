@@ -121,6 +121,24 @@ def _create_guest_intake_record(full_name, phone_number, email, notes, first_tim
     return record
 
 
+def _duplicate_guest_record(full_name, phone_number, email, first_time_value, whatsapp_status,
+                             referral_sources, referral_other, residence_areas, residence_other, notes):
+    return GuestIntake.query.filter(
+        GuestIntake.created_by_user_id == current_user.id,
+        GuestIntake.created_at >= _recent_cutoff(),
+        GuestIntake.full_name == full_name,
+        GuestIntake.phone_number == (phone_number or None),
+        GuestIntake.email == (email or None),
+        GuestIntake.first_time_at_temple == (first_time_value == 'yes'),
+        GuestIntake.whatsapp_status == whatsapp_status,
+        GuestIntake.referral_sources == (', '.join(referral_sources) if referral_sources else None),
+        GuestIntake.referral_other == (referral_other or None),
+        GuestIntake.residence_areas == (', '.join(residence_areas) if residence_areas else None),
+        GuestIntake.residence_other == (residence_other or None),
+        GuestIntake.notes == (notes or None),
+    ).first()
+
+
 # ─────────────────────────────────────────────────────────────
 # Dashboard
 # ─────────────────────────────────────────────────────────────
@@ -158,82 +176,15 @@ def home():
 # Newcomer Intake
 # ─────────────────────────────────────────────────────────────
 
-def _duplicate_quick_add(full_name, phone_number, created_by_user_id):
-    return GuestIntake.query.filter(
-        GuestIntake.created_by_user_id == created_by_user_id,
-        GuestIntake.created_at >= _recent_cutoff(),
-        GuestIntake.full_name == full_name,
-        GuestIntake.phone_number == (phone_number or None),
-    ).first()
-
-
 @views.route('/newcomers/new', methods=['GET', 'POST'])
 @login_required
 def guest_intake():
     if request.method == 'POST':
         form = request.form
-        names = form.getlist('full_name')
-        phones = form.getlist('phone_number')
-
-        errors = []
-        rows = []
-        for i, raw_name in enumerate(names):
-            full_name = raw_name.strip()
-            phone_number = format_phone((phones[i] if i < len(phones) else '').strip())
-            if not full_name and not phone_number:
-                continue
-            if not full_name:
-                errors.append(f'Row {i + 1}: full name is required.')
-                continue
-            if not phone_number:
-                errors.append(f'Row {i + 1} ({full_name}): phone number is required.')
-                continue
-            rows.append((full_name, phone_number))
-
-        if not rows and not errors:
-            errors.append('Add at least one person before saving.')
-
-        if errors:
-            return render_template('guest-intake.html', errors=errors, form=form)
-
-        added = 0
-        skipped = 0
-        for full_name, phone_number in rows:
-            if _duplicate_quick_add(full_name, phone_number, current_user.id):
-                skipped += 1
-                continue
-            _create_guest_intake_record(
-                full_name, phone_number, None, None, False,
-                None, [], None, [], None,
-                False, False, current_user.id,
-            )
-            added += 1
-
-        message = f'Added {added} newcomer{"s" if added != 1 else ""}.'
-        if skipped:
-            message += f' Skipped {skipped} already saved in the last {int(DUPLICATE_WINDOW.total_seconds() // 60)} minutes.'
-        flash(message, 'success')
-        return redirect(url_for('views.my_data'))
-
-    return render_template('guest-intake.html')
-
-
-@views.route('/newcomers/needs-followup')
-@login_required
-def needs_followup():
-    records = GuestIntake.query.filter(
-        GuestIntake.whatsapp_status.is_(None)
-    ).order_by(GuestIntake.created_at.asc()).all()
-    return render_template('needs-followup.html', records=records)
-
-
-@views.route('/newcomers/<int:record_id>/complete', methods=['GET', 'POST'])
-@login_required
-def complete_guest_intake(record_id):
-    record = GuestIntake.query.get_or_404(record_id)
-
-    if request.method == 'POST':
-        form = request.form
+        full_name = form.get('full_name', '').strip()
+        phone_number = format_phone(form.get('phone_number', '').strip())
+        email = form.get('email', '').strip()
+        notes = form.get('notes', '').strip()
         first_time_value = form.get('first_time_at_temple', 'no')
         whatsapp_status = form.get('whatsapp_status', '').strip()
         referral_sources = form.getlist('referral_sources')
@@ -242,38 +193,48 @@ def complete_guest_intake(record_id):
         residence_other = form.get('residence_other', '').strip()
         interested_in_volunteering = form.get('interested_in_volunteering') == 'yes'
         janmashtami_setup_help = interested_in_volunteering and form.get('janmashtami_setup_help') == 'yes'
-        email = form.get('email', '').strip()
-        notes = form.get('notes', '').strip()
 
+        errors = []
+        if not full_name:
+            errors.append('Full name is required.')
+        if not phone_number:
+            errors.append('Phone number is required.')
         if not whatsapp_status:
+            errors.append('Please select WhatsApp interest.')
+
+        if errors:
             return render_template(
-                'complete-guest-intake.html', record=record, errors=['Please select WhatsApp interest.'],
-                referral_options=REFERRAL_OPTIONS, area_options=AREA_OPTIONS, whatsapp_options=WHATSAPP_OPTIONS,
+                'guest-intake.html', errors=errors, form=form,
+                referral_options=REFERRAL_OPTIONS, area_options=AREA_OPTIONS,
+                whatsapp_options=WHATSAPP_OPTIONS,
             )
 
-        record.first_time_at_temple = (first_time_value == 'yes')
-        record.whatsapp_status = whatsapp_status
-        record.referral_sources = ', '.join(referral_sources) if referral_sources else None
-        record.referral_other = referral_other or None
-        record.residence_areas = ', '.join(residence_areas) if residence_areas else None
-        record.residence_other = residence_other or None
-        record.interested_in_volunteering = interested_in_volunteering
-        record.janmashtami_setup_help = janmashtami_setup_help
-        record.email = email or record.email
-        record.notes = notes or None
+        duplicate = _duplicate_guest_record(
+            full_name, phone_number, email, first_time_value, whatsapp_status,
+            referral_sources, referral_other, residence_areas, residence_other, notes,
+        )
+        if duplicate:
+            flash('This newcomer was already saved. No duplicate record was created.', 'info')
+            if form.get('submit_action') == 'save_add_another':
+                return redirect(url_for('views.guest_intake'))
+            return redirect(url_for('views.my_data'))
 
-        if email and record.person_id:
-            person = Person.query.get(record.person_id)
-            if person and not person.email:
-                person.email = email
+        _create_guest_intake_record(
+            full_name, phone_number, email, notes, (first_time_value == 'yes'),
+            whatsapp_status, referral_sources, referral_other, residence_areas, residence_other,
+            interested_in_volunteering, janmashtami_setup_help, current_user.id,
+        )
 
-        db.session.commit()
-        flash(f'Completed profile for {record.full_name}.', 'success')
-        return redirect(url_for('views.needs_followup'))
+        flash('Guest intake saved successfully.', 'success')
+        if form.get('submit_action') == 'save_add_another':
+            return redirect(url_for('views.guest_intake'))
+        return redirect(url_for('views.my_data'))
 
     return render_template(
-        'complete-guest-intake.html', record=record,
-        referral_options=REFERRAL_OPTIONS, area_options=AREA_OPTIONS, whatsapp_options=WHATSAPP_OPTIONS,
+        'guest-intake.html',
+        referral_options=REFERRAL_OPTIONS,
+        area_options=AREA_OPTIONS,
+        whatsapp_options=WHATSAPP_OPTIONS,
     )
 
 

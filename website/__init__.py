@@ -238,12 +238,9 @@ def create_app():
     def inject_pending_newcomer_count():
         from flask_login import current_user
         if db is None or not current_user.is_authenticated or not getattr(current_user, 'is_admin', False):
-            return {'pending_newcomer_count': 0, 'needs_followup_count': 0}
-        from .models import PendingNewcomer, GuestIntake
-        return {
-            'pending_newcomer_count': PendingNewcomer.query.count(),
-            'needs_followup_count': GuestIntake.query.filter(GuestIntake.whatsapp_status.is_(None)).count(),
-        }
+            return {'pending_newcomer_count': 0}
+        from .models import PendingNewcomer
+        return {'pending_newcomer_count': PendingNewcomer.query.count()}
 
     return app
 
