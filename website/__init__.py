@@ -1,4 +1,5 @@
 from os import path
+from datetime import timedelta
 from flask import Flask
 import os
 from flask_login import LoginManager
@@ -94,9 +95,16 @@ def create_app():
     from werkzeug.middleware.proxy_fix import ProxyFix
     app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_for=1)
 
+    force_https = os.environ.get('FORCE_HTTPS', 'false').lower() in ('1', 'true', 'yes')
+    # "Remember me" keeps a user logged in on their phone for a year after their last login,
+    # so devotees don't have to re-enter credentials every time they open the app.
+    app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=365)
+    app.config['REMEMBER_COOKIE_SAMESITE'] = 'Lax'
+    app.config['REMEMBER_COOKIE_SECURE'] = force_https
+    app.config['REMEMBER_COOKIE_HTTPONLY'] = True
+
     try:
         from flask_talisman import Talisman
-        force_https = os.environ.get('FORCE_HTTPS', 'false').lower() in ('1', 'true', 'yes')
         csp = {
             'default-src': "'self'",
             'script-src': ["'self'", "'unsafe-inline'", 'https://code.jquery.com', 'https://cdn.jsdelivr.net'],
