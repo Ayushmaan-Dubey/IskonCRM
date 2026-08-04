@@ -6,6 +6,7 @@
 <span class="section-kicker">Module 1</span>
 <h1 class="mt-2">Guest Intake</h1>
 <p class="muted">Capture newcomer details, first-time status, referral source, residence, and WhatsApp preference.</p>
+<p class="muted small"><span class="text-danger font-weight-bold">*</span> Full Name and Phone Number are the only required fields — everything else is optional, so fill in what you have time for.</p>
 
 {% if errors %}
   <div class="alert alert-danger">
@@ -42,8 +43,8 @@
         </select>
       </div>
       <div class="form-group col-md-6">
-        <label>Interested in joining Temple WhatsApp? <span class="text-danger">*</span></label>
-        <select name="whatsapp_status" class="form-control" required>
+        <label>Interested in joining Temple WhatsApp? <span class="text-muted small font-weight-normal">(optional)</span></label>
+        <select name="whatsapp_status" class="form-control">
           <option value="">-- Select --</option>
           {% for option in whatsapp_options %}
             <option value="{{ option }}" {% if form and form.get('whatsapp_status') == option %}selected{% endif %}>{{ option }}</option>
@@ -54,7 +55,7 @@
   </div>
 
   <div class="form-section">
-    <h5>How did they hear about us?</h5>
+    <h5>How did they hear about us? <span class="text-muted small font-weight-normal">(optional)</span></h5>
     <div class="form-row">
       {% set selected_referrals = form.getlist('referral_sources') if form else [] %}
       {% for option in referral_options %}
@@ -73,7 +74,7 @@
   </div>
 
   <div class="form-section">
-    <h5>Where do they reside?</h5>
+    <h5>Where do they reside? <span class="text-muted small font-weight-normal">(optional)</span></h5>
     <div class="form-row">
       {% set selected_areas = form.getlist('residence_areas') if form else [] %}
       {% for option in area_options %}
@@ -94,7 +95,7 @@
   <div class="form-section">
     <div class="form-row">
       <div class="form-group col-md-6">
-        <label>Interested in volunteering for the temple?</label>
+        <label>Interested in volunteering for the temple? <span class="text-muted small font-weight-normal">(optional)</span></label>
         <select name="interested_in_volunteering" id="volunteerSelect" class="form-control">
           <option value="no" {% if not form or form.get('interested_in_volunteering') != 'yes' %}selected{% endif %}>No</option>
           <option value="yes" {% if form and form.get('interested_in_volunteering') == 'yes' %}selected{% endif %}>Yes</option>
@@ -113,7 +114,7 @@
 
   <div class="form-section">
     <div class="form-group mb-0">
-      <label>General Notes / Comments</label>
+      <label>General Notes / Comments <span class="text-muted small font-weight-normal">(optional)</span></label>
       <textarea name="notes" class="form-control" rows="4">{{ form.notes if form else '' }}</textarea>
     </div>
   </div>

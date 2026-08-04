@@ -199,8 +199,6 @@ def guest_intake():
             errors.append('Full name is required.')
         if not phone_number:
             errors.append('Phone number is required.')
-        if not whatsapp_status:
-            errors.append('Please select WhatsApp interest.')
 
         if errors:
             return render_template(
