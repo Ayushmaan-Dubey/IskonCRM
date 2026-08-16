@@ -144,7 +144,14 @@ def admin_delete_user(user_id):
 @super_admin_required
 def admin_reset_user_password(user_id):
     user = User.query.get_or_404(user_id)
-    new_password = secrets.token_urlsafe(9)
+    custom_password = request.form.get('new_password', '').strip()
+    if custom_password:
+        if len(custom_password) < 6:
+            flash('Custom password must be at least 6 characters. No changes made.', 'warning')
+            return redirect(url_for('admin.admin_users'))
+        new_password = custom_password
+    else:
+        new_password = secrets.token_urlsafe(9)
     user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
     user.must_change_password = True
     db.session.commit()
