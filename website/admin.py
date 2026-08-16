@@ -160,6 +160,27 @@ def admin_reset_user_password(user_id):
     return redirect(url_for('admin.admin_users'))
 
 
+@admin.route('/admin/users/<int:user_id>/edit-email', methods=['POST'])
+@super_admin_required
+def admin_edit_user_email(user_id):
+    user = User.query.get_or_404(user_id)
+    new_email = request.form.get('new_email', '').strip()
+    if not new_email or '@' not in new_email:
+        flash('Enter a valid email address.', 'warning')
+        return redirect(url_for('admin.admin_users'))
+    existing = User.query.filter(User.email == new_email, User.id != user.id).first()
+    if existing:
+        flash(f'{new_email} is already in use by another account.', 'warning')
+        return redirect(url_for('admin.admin_users'))
+    old_email = user.email
+    user.email = new_email
+    db.session.commit()
+    log_event('admin_action', f'Changed email for user {user.id}: {old_email} -> {new_email}.',
+              actor=current_user, target_type='User', target_id=user.id)
+    flash(f'Updated email: {old_email} -> {new_email}.', 'success')
+    return redirect(url_for('admin.admin_users'))
+
+
 @admin.route('/admin/create-user', methods=['GET', 'POST'])
 @admin_required
 def admin_create_user():
