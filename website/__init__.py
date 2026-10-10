@@ -121,6 +121,10 @@ def create_app():
         if database_url:
             if database_url.startswith('postgres://'):
                 database_url = 'postgresql://' + database_url[len('postgres://'):]
+            # Pin the driver explicitly — SQLAlchemy 2.1 changed the default for a bare
+            # postgresql:// URL from psycopg2 to psycopg (v3), which isn't installed here.
+            if database_url.startswith('postgresql://'):
+                database_url = 'postgresql+psycopg2://' + database_url[len('postgresql://'):]
             app.config['SQLALCHEMY_DATABASE_URI'] = database_url
         else:
             db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database.db')
