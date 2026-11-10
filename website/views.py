@@ -1,5 +1,7 @@
 import io
+import os
 import base64
+import secrets
 from datetime import datetime, timedelta
 
 from flask import (Blueprint, Response, current_app, flash, jsonify, redirect,
@@ -234,6 +236,67 @@ def guest_intake():
         area_options=AREA_OPTIONS,
         whatsapp_options=WHATSAPP_OPTIONS,
     )
+
+
+# ─────────────────────────────────────────────────────────────
+# Voice Quick-Add (LiveKit)
+# The browser joins a LiveKit room with the voice agent (voice_agent/agent.py). The agent
+# only talks; once the volunteer says "yes" it asks THIS browser to save, over RPC, so the
+# save runs under the volunteer's own login and the agent never holds database access.
+# ─────────────────────────────────────────────────────────────
+
+VOICE_MAX_PEOPLE = 10
+
+
+@views.route('/voice/token', methods=['POST'])
+@login_required
+def voice_token():
+    url = os.environ.get('LIVEKIT_URL')
+    api_key = os.environ.get('LIVEKIT_API_KEY')
+    api_secret = os.environ.get('LIVEKIT_API_SECRET')
+    if not (url and api_key and api_secret):
+        return jsonify(error='Voice quick-add is not configured on this server.'), 503
+
+    from livekit import api as lk_api  # imported lazily so the app still boots without it
+
+    room = f'quickadd-{current_user.id}-{secrets.token_hex(4)}'
+    token = (
+        lk_api.AccessToken(api_key, api_secret)
+        .with_identity(f'user-{current_user.id}')
+        .with_name(current_user.first_name)
+        .with_ttl(timedelta(minutes=10))
+        .with_grants(lk_api.VideoGrants(room_join=True, room=room))
+        .to_jwt()
+    )
+    return jsonify(url=url, token=token)
+
+
+@views.route('/voice/save', methods=['POST'])
+@login_required
+def voice_save():
+    data = request.get_json(silent=True)
+    people = data.get('people') if isinstance(data, dict) else None
+    if not isinstance(people, list) or not people:
+        return jsonify(error='No people to save.'), 400
+    if len(people) > VOICE_MAX_PEOPLE:
+        return jsonify(error=f'At most {VOICE_MAX_PEOPLE} people per request.'), 400
+
+    results = []
+    for entry in people:
+        full_name = str(entry.get('full_name', '')).strip()[:200] if isinstance(entry, dict) else ''
+        phone_number = format_phone(str(entry.get('phone_number', '')).strip()[:50]) if isinstance(entry, dict) else ''
+        if not full_name or not phone_number:
+            results.append({'full_name': full_name, 'status': 'skipped', 'reason': 'name and phone are both required'})
+            continue
+        notes = 'Added by voice quick-add'
+        if _duplicate_guest_record(full_name, phone_number, '', 'no', None, [], '', [], '', notes):
+            results.append({'full_name': full_name, 'status': 'duplicate'})
+            continue
+        _create_guest_intake_record(
+            full_name, phone_number, '', notes, False, '', [], '', [], '', False, False, current_user.id,
+        )
+        results.append({'full_name': full_name, 'status': 'saved'})
+    return jsonify(results=results)
 
 
 # ─────────────────────────────────────────────────────────────

@@ -16,6 +16,13 @@ services:
         value: 3.11.9
       - key: FORCE_HTTPS
         value: true
+      # Voice quick-add (LiveKit). Set the values in the Render dashboard.
+      - key: LIVEKIT_URL
+        sync: false
+      - key: LIVEKIT_API_KEY
+        sync: false
+      - key: LIVEKIT_API_SECRET
+        sync: false
 
 databases:
   - name: temple-crm-db

@@ -8,6 +8,18 @@
 <p class="muted">Capture newcomer details, first-time status, referral source, residence, and WhatsApp preference.</p>
 <p class="muted small"><span class="text-danger font-weight-bold">*</span> Full Name and Phone Number are the only required fields — everything else is optional, so fill in what you have time for.</p>
 
+<div id="voice-quickadd" class="form-section mt-3"
+     data-token-url="{{ url_for('views.voice_token') }}" data-save-url="{{ url_for('views.voice_save') }}">
+  <h5 class="mb-1">Voice quick-add</h5>
+  <p class="muted small mb-2">Tap start and say who you met, with their phone numbers. The assistant reads everything back and only saves after you say yes. Newcomers saved this way appear under My Data, marked "Added by voice quick-add" in the notes.</p>
+  <button type="button" id="voice-start" class="btn btn-dark">Start talking</button>
+  <button type="button" id="voice-stop" class="btn btn-outline-dark d-none">Stop</button>
+  <span id="voice-status" class="muted small ml-2" role="status">Ready.</span>
+  <ul id="voice-results" class="small mt-2 mb-0"></ul>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2.15.4/dist/livekit-client.umd.js" crossorigin="anonymous"></script>
+<script src="{{ url_for('static', filename='voice-quickadd.js') }}?v=1"></script>
+
 {% if errors %}
   <div class="alert alert-danger">
     <ul class="mb-0">

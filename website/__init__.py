@@ -111,6 +111,8 @@ def create_app():
             'style-src': ["'self'", "'unsafe-inline'", 'https://stackpath.bootstrapcdn.com', 'https://fonts.googleapis.com'],
             'font-src': ["'self'", 'https://fonts.gstatic.com', 'https://stackpath.bootstrapcdn.com'],
             'img-src': ["'self'", 'data:'],
+            # Voice quick-add: LiveKit Cloud signalling (wss) and media setup (https).
+            'connect-src': ["'self'", 'https://*.livekit.cloud', 'wss://*.livekit.cloud'],
         }
         Talisman(app, force_https=force_https, strict_transport_security=force_https, content_security_policy=csp)
     except ImportError:

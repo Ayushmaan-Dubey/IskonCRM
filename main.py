@@ -2,6 +2,12 @@ import os
 import sys
 
 try:
+    from dotenv import load_dotenv
+    load_dotenv()  # local .env only; on Render the real environment is used
+except ImportError:
+    pass
+
+try:
     from website import create_app
 except ModuleNotFoundError as exc:
     missing_module = exc.name or "unknown dependency"
