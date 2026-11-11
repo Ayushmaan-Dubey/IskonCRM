@@ -1,0 +1,26 @@
+name: Weekly sheet sync
+
+# Sundays 11 PM Central. GitHub cron is UTC-only, so it fires at both 04:00 and 05:00 UTC
+# Monday (11 PM during daylight time, 11 PM during standard time); the server only runs the
+# import inside the Sunday 11 PM-1 AM Central window, and a second run finds nothing new.
+on:
+  schedule:
+    - cron: '0 4 * * 1'
+    - cron: '0 5 * * 1'
+  workflow_dispatch:   # lets an admin run it by hand from the Actions tab
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call the sync endpoint
+        env:
+          SYNC_URL: ${{ secrets.SYNC_URL }}
+          SYNC_TOKEN: ${{ secrets.SYNC_TOKEN }}
+          SCHEDULED: ${{ github.event_name == 'schedule' && '1' || '0' }}
+        run: |
+          # The free Render instance may be asleep; allow time for it to wake up.
+          curl --fail-with-body --silent --show-error \
+            --max-time 300 --retry 3 --retry-delay 30 --retry-all-errors \
+            -X POST -H "Authorization: Bearer ${SYNC_TOKEN}" \
+            "${SYNC_URL%/}/internal/sync-sheets?scheduled=${SCHEDULED}"

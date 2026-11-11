@@ -137,6 +137,7 @@ def create_app():
 
         with app.app_context():
             from . import models
+            from . import sheet_sync as _sheet_sync  # registers its tables before create_all
 
             inspector = inspect(db.engine)
             existing_tables = inspector.get_table_names()
@@ -217,6 +218,7 @@ def create_app():
 
             # ── Create all new tables ───────────────────────────────────────
             db.create_all()
+            _sheet_sync.ensure_baseline()  # weekly Google Sheet import only takes NEW responses
 
             # ── Seed default message templates ──────────────────────────────
             from .models import MessageTemplate
@@ -244,6 +246,8 @@ def create_app():
     app.register_blueprint(views, url_prefix='/')
     app.register_blueprint(auth, url_prefix='/')
     app.register_blueprint(admin, url_prefix='/')
+    from .sheet_sync import sheet_sync
+    app.register_blueprint(sheet_sync)
 
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
