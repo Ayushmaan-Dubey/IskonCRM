@@ -1,0 +1,120 @@
+{% extends 'base.HTML' %}
+
+{% block title %}Complete Profile{% endblock %}
+
+{% block content %}
+<span class="section-kicker">Module 1 · Follow-Up</span>
+<h1 class="mt-2">Complete Profile</h1>
+<p class="muted">Finishing the rest of the details for <strong>{{ record.full_name }}</strong> ({{ record.phone_number or 'no phone' }}).</p>
+
+{% if errors %}
+  <div class="alert alert-danger">
+    <ul class="mb-0">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>
+  </div>
+{% endif %}
+
+<form method="post" class="mt-4" data-prevent-double-submit>
+  <div class="form-section">
+    <div class="form-row">
+      <div class="form-group col-md-6">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" class="form-control" value="{{ form.get('email', record.email or '') }}">
+      </div>
+      <div class="form-group col-md-6">
+        <label for="first_time_at_temple">First time at temple?</label>
+        <select id="first_time_at_temple" name="first_time_at_temple" class="form-control">
+          <option value="yes" {% if form.get('first_time_at_temple', 'yes' if record.first_time_at_temple else 'no') == 'yes' %}selected{% endif %}>Yes</option>
+          <option value="no" {% if form.get('first_time_at_temple', 'yes' if record.first_time_at_temple else 'no') == 'no' %}selected{% endif %}>No</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group mb-0">
+      <label for="whatsapp_status">Interested in joining Temple WhatsApp? <span class="text-danger">*</span></label>
+      <select id="whatsapp_status" name="whatsapp_status" class="form-control" required>
+        <option value="">-- Select --</option>
+        {% for option in whatsapp_options %}
+          <option value="{{ option }}" {% if form.get('whatsapp_status', record.whatsapp_status or '') == option %}selected{% endif %}>{{ option }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h5>How did they hear about us? <span class="text-muted small font-weight-normal">(optional)</span></h5>
+    <div class="form-row">
+      {% for option in referral_options %}
+        <div class="form-group col-md-4 mb-2">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="referral_sources" value="{{ option }}" id="referral_{{ loop.index }}" {% if option in selected_referrals %}checked{% endif %}>
+            <label class="form-check-label" for="referral_{{ loop.index }}">{{ option }}</label>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="form-group mb-0">
+      <label for="referral_other">Other referral details</label>
+      <input type="text" id="referral_other" name="referral_other" class="form-control" value="{{ form.get('referral_other', record.referral_other or '') }}">
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h5>Where do they reside? <span class="text-muted small font-weight-normal">(optional)</span></h5>
+    <div class="form-row">
+      {% for option in area_options %}
+        <div class="form-group col-md-4 mb-2">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="residence_areas" value="{{ option }}" id="area_{{ loop.index }}" {% if option in selected_areas %}checked{% endif %}>
+            <label class="form-check-label" for="area_{{ loop.index }}">{{ option }}</label>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="form-group mb-0">
+      <label for="residence_other">Other residence details</label>
+      <input type="text" id="residence_other" name="residence_other" class="form-control" value="{{ form.get('residence_other', record.residence_other or '') }}">
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="form-row">
+      <div class="form-group col-md-6">
+        <label for="volunteerSelect">Interested in volunteering for the temple? <span class="text-muted small font-weight-normal">(optional)</span></label>
+        <select name="interested_in_volunteering" id="volunteerSelect" class="form-control">
+          <option value="no" {% if volunteer != 'yes' %}selected{% endif %}>No</option>
+          <option value="yes" {% if volunteer == 'yes' %}selected{% endif %}>Yes</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row" id="janmashtamiRow" style="display:none;">
+      <div class="form-group col-md-10 mb-0">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="janmashtami_setup_help" id="janmashtamiCheck" value="yes" {% if form.get('janmashtami_setup_help') == 'yes' %}checked{% endif %}>
+          <label class="form-check-label" for="janmashtamiCheck">Would you be willing to help with setup for the upcoming Janmashtami celebration?</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="form-group mb-0">
+      <label for="notes">More notes <span class="text-muted small font-weight-normal">(optional, added to what is already saved)</span></label>
+      <textarea id="notes" name="notes" class="form-control" rows="3">{{ form.get('notes', '') }}</textarea>
+    </div>
+  </div>
+
+  <div class="d-flex flex-column flex-md-row">
+    <button type="submit" class="btn btn-dark mr-md-2 mb-2 mb-md-0">Save &amp; Mark Complete</button>
+    <a href="{{ url_for('views.newcomer_follow_up') }}" class="btn btn-outline-dark">Back to list</a>
+  </div>
+</form>
+
+<script>
+(function () {
+  var sel = document.getElementById('volunteerSelect');
+  var row = document.getElementById('janmashtamiRow');
+  function sync() { row.style.display = sel.value === 'yes' ? '' : 'none'; }
+  sel.addEventListener('change', sync);
+  sync();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends 'base.HTML' %}
+
+{% block title %}Needs Follow-Up{% endblock %}
+
+{% block content %}
+<span class="section-kicker">Module 1 · Follow-Up</span>
+<h1 class="mt-2 mb-1">Needs Follow-Up</h1>
+<p class="muted">Newcomers added by voice. Their name and phone number are saved, but the rest of their profile is still waiting to be filled in.</p>
+
+<div class="table-card">
+  {% if records %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Added</th>
+            <th>Added By</th>
+            <th style="width:160px;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for record in records %}
+            <tr>
+              <td><strong>{{ record.full_name }}</strong></td>
+              <td class="small">{{ record.phone_number or '' }}</td>
+              <td class="small text-muted">{{ record.created_at.strftime('%Y-%m-%d %H:%M') if record.created_at else '' }}</td>
+              <td class="small text-muted">{{ added_by.get(record.created_by_user_id, '') }}</td>
+              <td><a href="{{ url_for('views.complete_newcomer_profile', record_id=record.id) }}" class="btn btn-sm btn-dark">Complete Profile</a></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted mb-0 p-3">Nobody is waiting. Newcomers added with <strong>Voice quick-add</strong> will show up here until their profile is completed.</p>
+  {% endif %}
+</div>
+{% endblock %}

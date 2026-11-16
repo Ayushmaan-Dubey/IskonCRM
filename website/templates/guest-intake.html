@@ -11,7 +11,7 @@
 <div id="voice-quickadd" class="form-section mt-3"
      data-token-url="{{ url_for('views.voice_token') }}" data-save-url="{{ url_for('views.voice_save') }}">
   <h5 class="mb-1">Voice quick-add</h5>
-  <p class="muted small mb-2">Tap start and say who you met, with their phone numbers. The assistant reads everything back and only saves after you say yes. Newcomers saved this way appear under My Data, marked "Added by voice quick-add" in the notes.</p>
+  <p class="muted small mb-2">Tap start and say who you met, with their phone numbers. The assistant reads everything back and only saves after you say yes. Newcomers saved this way appear on the <a href="{{ url_for('views.newcomer_follow_up') }}">Follow-Up</a> list, where you can finish their details later.</p>
   <button type="button" id="voice-start" class="btn btn-dark">Start talking</button>
   <button type="button" id="voice-stop" class="btn btn-outline-dark d-none">Stop</button>
   <span id="voice-status" class="muted small ml-2" role="status">Ready.</span>

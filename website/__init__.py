@@ -208,6 +208,7 @@ def create_app():
                     ('person_id',                 'ALTER TABLE guest_intake ADD COLUMN person_id INTEGER REFERENCES person(id)'),
                     ('interested_in_volunteering', 'ALTER TABLE guest_intake ADD COLUMN interested_in_volunteering BOOLEAN DEFAULT FALSE'),
                     ('janmashtami_setup_help',     'ALTER TABLE guest_intake ADD COLUMN janmashtami_setup_help BOOLEAN DEFAULT FALSE'),
+                    ('needs_followup',             'ALTER TABLE guest_intake ADD COLUMN needs_followup BOOLEAN DEFAULT FALSE'),
                 ]:
                     if col not in cols:
                         try:
@@ -219,6 +220,7 @@ def create_app():
             # ── Create all new tables ───────────────────────────────────────
             db.create_all()
             _sheet_sync.ensure_baseline()  # weekly Google Sheet import only takes NEW responses
+            _flag_voice_added_for_followup()
 
             # ── Seed default message templates ──────────────────────────────
             from .models import MessageTemplate
@@ -261,6 +263,20 @@ def create_app():
         return {'pending_newcomer_count': PendingNewcomer.query.count()}
 
     return app
+
+
+def _flag_voice_added_for_followup():
+    """People added by voice before the follow-up list existed still have only a name and phone
+    number. Completing a profile rewrites the note, so this matches untouched records only."""
+    try:
+        db.session.execute(
+            text("UPDATE guest_intake SET needs_followup = :yes WHERE needs_followup = :no "
+                 "AND notes = 'Added by voice quick-add'"),
+            {'yes': True, 'no': False},
+        )
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
 
 
 def _migrate_guest_intakes_to_persons():

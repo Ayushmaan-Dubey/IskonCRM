@@ -292,11 +292,97 @@ def voice_save():
         if _duplicate_guest_record(full_name, phone_number, '', 'no', None, [], '', [], '', notes):
             results.append({'full_name': full_name, 'status': 'duplicate'})
             continue
-        _create_guest_intake_record(
+        record = _create_guest_intake_record(
             full_name, phone_number, '', notes, False, '', [], '', [], '', False, False, current_user.id,
         )
+        record.needs_followup = True
+        db.session.commit()
         results.append({'full_name': full_name, 'status': 'saved'})
     return jsonify(results=results)
+
+
+# ─────────────────────────────────────────────────────────────
+# Follow-up: people added by voice have only a name and phone number
+# ─────────────────────────────────────────────────────────────
+
+VOICE_NOTE = 'Added by voice quick-add'
+
+
+@views.route('/newcomers/follow-up')
+@login_required
+def newcomer_follow_up():
+    from .models import User
+
+    records = GuestIntake.query.filter_by(needs_followup=True).order_by(GuestIntake.created_at.asc()).all()
+    owner_ids = {r.created_by_user_id for r in records}
+    added_by = {}
+    if owner_ids:
+        for user in User.query.filter(User.id.in_(owner_ids)).all():
+            added_by[user.id] = ' '.join(p for p in [user.first_name, getattr(user, 'last_name', None)] if p)
+    return render_template('follow-up.html', records=records, added_by=added_by)
+
+
+@views.route('/newcomers/<int:record_id>/complete', methods=['GET', 'POST'])
+@login_required
+def complete_newcomer_profile(record_id):
+    record = db.get_or_404(GuestIntake, record_id)
+    if not record.needs_followup:
+        flash('This profile is already complete.', 'info')
+        return redirect(url_for('views.newcomer_follow_up'))
+
+    def render(form, errors=None):
+        selected_referrals = form.getlist('referral_sources') if request.method == 'POST' else \
+            [s.strip() for s in (record.referral_sources or '').split(',') if s.strip()]
+        selected_areas = form.getlist('residence_areas') if request.method == 'POST' else \
+            [s.strip() for s in (record.residence_areas or '').split(',') if s.strip()]
+        volunteer = form.get('interested_in_volunteering', 'yes' if record.interested_in_volunteering else 'no')
+        return render_template(
+            'guest-complete.html', record=record, form=form, errors=errors or [],
+            referral_options=REFERRAL_OPTIONS, area_options=AREA_OPTIONS, whatsapp_options=WHATSAPP_OPTIONS,
+            selected_referrals=selected_referrals, selected_areas=selected_areas, volunteer=volunteer,
+        )
+
+    if request.method == 'GET':
+        return render(request.args)
+
+    form = request.form
+    email = form.get('email', '').strip()[:150]
+    whatsapp_status = form.get('whatsapp_status', '').strip()
+    errors = []
+    if whatsapp_status not in WHATSAPP_OPTIONS:
+        errors.append('Please say whether they are interested in the Temple WhatsApp.')
+    if email and ('@' not in email or ' ' in email):
+        errors.append('That email address does not look right.')
+    if errors:
+        return render(form, errors)
+
+    interested = form.get('interested_in_volunteering') == 'yes'
+    record.email = email or None
+    record.first_time_at_temple = form.get('first_time_at_temple') == 'yes'
+    record.whatsapp_status = whatsapp_status
+    record.referral_sources = ', '.join(form.getlist('referral_sources')) or None
+    record.referral_other = form.get('referral_other', '').strip()[:200] or None
+    record.residence_areas = ', '.join(form.getlist('residence_areas')) or None
+    record.residence_other = form.get('residence_other', '').strip()[:200] or None
+    record.interested_in_volunteering = interested
+    record.janmashtami_setup_help = interested and form.get('janmashtami_setup_help') == 'yes'
+
+    notes = (record.notes or '').replace(VOICE_NOTE, f'{VOICE_NOTE} (profile completed)', 1)
+    extra = form.get('notes', '').strip()
+    if extra:
+        notes = f'{notes}\n{extra}' if notes else extra
+    record.notes = notes or None
+    record.needs_followup = False
+
+    if email and record.person_id:
+        person = db.session.get(Person, record.person_id)
+        if person and not person.email:
+            person.email = email
+    db.session.commit()
+    log_event('record_updated', f'Completed profile for {record.full_name}.', actor=current_user,
+              target_type='GuestIntake', target_id=record.id)
+    flash(f'Profile for {record.full_name} is complete.', 'success')
+    return redirect(url_for('views.newcomer_follow_up'))
 
 
 # ─────────────────────────────────────────────────────────────

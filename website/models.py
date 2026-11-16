@@ -74,6 +74,8 @@ class GuestIntake(db.Model):
     created_at = db.Column(db.DateTime(timezone=True), default=func.now(), nullable=False)
     created_by_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     person_id = db.Column(db.Integer, db.ForeignKey('person.id'), nullable=True)
+    # True for people added by voice quick-add (name + phone only) until a volunteer completes the profile
+    needs_followup = db.Column(db.Boolean, default=False, nullable=False)
 
 
 class PendingNewcomer(db.Model):
